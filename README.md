@@ -2,7 +2,7 @@
 
 Employee quality & audit system — v2 modular rewrite.
 
-**Status:** Phase 1 — Core infrastructure.
+**Status:** Phase 2 — Ingest layer.
 
 ## What it does
 
@@ -66,6 +66,34 @@ Run integration connectivity test locally:
 export WORKAI_DB__DSN=postgresql://user:pass@host:5432/workai
 pytest tests/integration/test_db_connectivity.py
 ```
+
+## Ingest (Phase 2)
+
+WorkAI ingest reads bounded Google Sheets ranges and writes them to `sheet_cells`.
+
+- Source of truth for architecture: `ARCHITECTURE.md` (`ingest -> sheet_cells`)
+- TODO(TZ §2.2): align ingest coverage matrix with full product specification.
+
+Required ingest environment variables:
+
+- `WORKAI_GSHEETS__ENABLED=true`
+- `WORKAI_GSHEETS__SPREADSHEET_ID=<google_spreadsheet_id>`
+- `WORKAI_GSHEETS__RANGES=Sheet1!A1:Z200,Sheet2!A1:Z200`
+- one of:
+  - `WORKAI_GSHEETS__SERVICE_ACCOUNT_FILE=/path/to/service-account.json`
+  - `WORKAI_GSHEETS__SERVICE_ACCOUNT_JSON_B64=<base64-json>`
+
+Run ingest manually:
+
+```bash
+python scripts/workai_ingest.py run
+```
+
+Google access note:
+
+- Share spreadsheet with service account email as Viewer (read-only mode).
+- Use bounded ranges only (`Sheet1!A1:Z200`), avoid unbounded forms (`A:Z`, `A1:Z`) to prevent huge ingest.
+- Ingest uses `batchGet` and range chunking, not per-cell API calls, to reduce quota usage.
 
 ## Project structure
 

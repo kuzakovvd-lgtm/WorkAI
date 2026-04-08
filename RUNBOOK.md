@@ -52,6 +52,16 @@ WORKAI_DB__DSN=postgresql://user:pass@host:5432/workai alembic upgrade head --sq
 pytest tests/integration/test_db_connectivity.py
 ```
 
+## Ingest run (Phase 2)
+
+```bash
+export WORKAI_GSHEETS__ENABLED=true
+export WORKAI_GSHEETS__SPREADSHEET_ID=<spreadsheet-id>
+export WORKAI_GSHEETS__RANGES=Sheet1!A1:Z200,Sheet2!A1:Z200
+export WORKAI_GSHEETS__SERVICE_ACCOUNT_FILE=/path/to/service-account.json
+python scripts/workai_ingest.py run
+```
+
 ## Server path conventions
 
 - v2: `/opt/WorkAI`

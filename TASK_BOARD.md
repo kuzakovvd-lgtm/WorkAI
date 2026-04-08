@@ -9,17 +9,18 @@ Policy: every non-trivial iteration must update this board together with
 
 - [x] Phase 0 bootstrap.
 - [x] Phase 1 core infrastructure.
+- [x] Phase 2 ingest layer (`Google Sheets -> sheet_cells`).
 
 ## In progress
 
-- [ ] Phase 2 ingest design details (source contract + retries + observability).
+- [ ] Phase 3 parse layer design and `raw_tasks` contract.
 
 ## Next
 
-- [ ] Define Phase 2 DB tables/migrations for ingest staging.
-- [ ] Implement ingest module entrypoint(s) in `scripts/`.
-- [ ] Add ingest unit/integration tests.
-- [ ] Extend runbook with ingest operational checks.
+- [ ] Define `raw_tasks` schema and migration(s) for parse layer.
+- [ ] Implement parse module entrypoint(s) in `scripts/`.
+- [ ] Add parse unit/integration tests.
+- [ ] Extend runbook with parse operational checks.
 
 ## Backlog
 

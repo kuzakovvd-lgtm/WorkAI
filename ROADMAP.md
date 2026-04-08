@@ -8,7 +8,7 @@ Status date: 2026-04-08
 |---|---|---|---|
 | 0 | Bootstrap (repo/tooling/CI skeleton) | Done | Repo skeleton exists, CI runs lint/type/test, baseline docs present |
 | 1 | Core infrastructure (`config`, `common`, `db`, Alembic baseline) | Done | Typed settings/logging/db helpers + Alembic baseline + tests |
-| 2 | Ingest layer | Planned | Source pull into raw staging tables, retries, observability |
+| 2 | Ingest layer | Done | Source pull into `sheet_cells`, retries, observability, CLI entrypoint |
 | 3 | Parse layer | Planned | Deterministic parsing into `raw_tasks` with tests |
 | 4 | Normalize layer | Planned | Canonical `tasks_normalized` contract + migrations |
 | 5 | Assess layer | Planned | Scoring and ghost-time calculations with reproducible rules |
@@ -22,4 +22,4 @@ Status date: 2026-04-08
 
 ## Current focus
 
-Phase 2 planning and DB contract refinement for ingest/parser handoff.
+Phase 3 planning and DB contract refinement for parse handoff.

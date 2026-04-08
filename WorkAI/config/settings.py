@@ -5,7 +5,7 @@ from __future__ import annotations
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from WorkAI import __version__
@@ -48,6 +48,62 @@ class DatabaseSettings(BaseModel):
         return self.dsn.strip()
 
 
+class GoogleSheetsSettings(BaseModel):
+    """Google Sheets ingestion configuration."""
+
+    enabled: bool = False
+    spreadsheet_id: str | None = None
+    ranges: list[str] = Field(default_factory=list)
+    service_account_file: str | None = None
+    service_account_json_b64: str | None = None
+    read_only: bool = True
+    request_timeout_sec: float = 30.0
+    max_retries: int = 5
+    backoff_base_sec: float = 0.5
+    batch_ranges: int = 20
+    value_render_option: Literal["FORMATTED_VALUE", "UNFORMATTED_VALUE"] = "FORMATTED_VALUE"
+    date_time_render_option: Literal["FORMATTED_STRING", "SERIAL_NUMBER"] = "FORMATTED_STRING"
+
+    @field_validator("ranges", mode="before")
+    @classmethod
+    def parse_ranges_csv(cls, value: object) -> object:
+        """Allow CSV string in WORKAI_GSHEETS__RANGES env var."""
+
+        if isinstance(value, str):
+            parsed = [part.strip() for part in value.split(",") if part.strip()]
+            return parsed
+        return value
+
+    @model_validator(mode="after")
+    def validate_when_enabled(self) -> GoogleSheetsSettings:
+        """Validate required fields for enabled ingest mode."""
+
+        if not self.enabled:
+            return self
+
+        if self.spreadsheet_id is None or self.spreadsheet_id.strip() == "":
+            raise ValueError("WORKAI_GSHEETS__SPREADSHEET_ID is required when gsheets.enabled=true")
+
+        if not self.ranges:
+            raise ValueError("WORKAI_GSHEETS__RANGES must be non-empty when gsheets.enabled=true")
+
+        has_file = self.service_account_file is not None and self.service_account_file.strip() != ""
+        has_b64 = self.service_account_json_b64 is not None and self.service_account_json_b64.strip() != ""
+        if not (has_file or has_b64):
+            raise ValueError(
+                "Set WORKAI_GSHEETS__SERVICE_ACCOUNT_FILE or "
+                "WORKAI_GSHEETS__SERVICE_ACCOUNT_JSON_B64 when gsheets.enabled=true"
+            )
+
+        if self.batch_ranges <= 0:
+            raise ValueError("WORKAI_GSHEETS__BATCH_RANGES must be positive")
+
+        if self.max_retries < 0:
+            raise ValueError("WORKAI_GSHEETS__MAX_RETRIES must be >= 0")
+
+        return self
+
+
 class Settings(BaseSettings):
     """Root settings object for the service."""
 
@@ -62,6 +118,7 @@ class Settings(BaseSettings):
     app: AppSettings = Field(default_factory=AppSettings)
     log: LoggingSettings = Field(default_factory=LoggingSettings)
     db: DatabaseSettings = Field(default_factory=DatabaseSettings)
+    gsheets: GoogleSheetsSettings = Field(default_factory=GoogleSheetsSettings)
 
     @model_validator(mode="after")
     def sync_root_env_to_app(self) -> Settings:
