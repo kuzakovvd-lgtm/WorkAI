@@ -92,6 +92,15 @@ deploy/           systemd units & secret templates
 docs/             Architecture & ops documentation
 ```
 
+## Iteration logs
+
+Detailed implementation logs for each phase are stored in
+`docs/iteration-logs/`.
+
+## Documentation index
+
+Use `DOCS_INDEX.md` as the single entry point for project context.
+
 ## License
 
 Proprietary — internal company use only.
