@@ -2,6 +2,9 @@
 
 Status date: 2026-04-08
 
+Policy: every non-trivial iteration must update this board together with
+`docs/iteration-logs/` entry.
+
 ## Done
 
 - [x] Phase 0 bootstrap.

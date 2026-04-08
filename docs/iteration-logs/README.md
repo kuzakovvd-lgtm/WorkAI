@@ -7,6 +7,8 @@ Format rules:
 - File name: `YYYY-MM-DD_phase-<id>_<short-topic>.md`.
 - Dates in ISO format (`YYYY-MM-DD`).
 - Keep latest iteration at top in the index table.
+- For each non-trivial iteration, updating this index is required.
+- The same iteration must update `TASK_BOARD.md` status.
 
 ## Index
 

@@ -17,8 +17,12 @@
    - `ruff check .`
    - `mypy WorkAI`
    - `pytest`
-5. Update iteration log in `docs/iteration-logs/`.
-6. Record important architecture changes in `DECISIONS.md`.
+5. Update/create iteration log in `docs/iteration-logs/`.
+6. Update `docs/iteration-logs/README.md` index with the new entry.
+7. Update `TASK_BOARD.md` (status date + task state transitions).
+8. Record important architecture changes in `DECISIONS.md`.
+
+This workflow is mandatory for every non-trivial change.
 
 ## Quality gates
 
