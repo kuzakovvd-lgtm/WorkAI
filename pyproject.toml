@@ -16,6 +16,8 @@ dependencies = [
     "pydantic>=2.9,<3",
     "pydantic-settings>=2.6,<3",
     "structlog>=24.4,<25",
+    "alembic>=1.18,<2",
+    "psycopg[binary,pool]>=3.3,<4",
 ]
 
 [project.optional-dependencies]
@@ -74,10 +76,6 @@ warn_redundant_casts = true
 warn_unused_ignores = true
 warn_return_any = true
 packages = ["WorkAI"]
-
-[[tool.mypy.overrides]]
-module = "tests.*"
-disallow_untyped_defs = false
 
 [tool.pytest.ini_options]
 minversion = "8.0"

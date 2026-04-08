@@ -2,7 +2,7 @@
 
 Employee quality & audit system — v2 modular rewrite.
 
-**Status:** Phase 0 — Bootstrap.
+**Status:** Phase 1 — Core infrastructure.
 
 ## What it does
 
@@ -34,6 +34,37 @@ python -c "import WorkAI; print(WorkAI.__version__)"
 ruff check .
 mypy WorkAI
 pytest
+```
+
+## Database & migrations (Phase 1)
+
+Required environment variables:
+
+- `WORKAI_ENV=dev|staging|prod`
+- `WORKAI_LOG__LEVEL=DEBUG|INFO|WARNING|ERROR`
+- `WORKAI_LOG__JSON=false|true`
+- `WORKAI_DB__DSN=postgresql://user:pass@host:5432/workai`
+- `WORKAI_DB__MIN_SIZE=1`
+- `WORKAI_DB__MAX_SIZE=5`
+- `WORKAI_DB__TIMEOUT_SEC=10`
+- `WORKAI_DB__CONNECT_TIMEOUT_SEC=5`
+- `WORKAI_DB__LOCK_TIMEOUT_MS=2000`
+
+Migration commands:
+
+```bash
+export WORKAI_DB__DSN=postgresql://user:pass@host:5432/workai
+python scripts/workai_migrate.py upgrade head
+python scripts/workai_migrate.py current
+python scripts/workai_migrate.py downgrade -1
+alembic upgrade head --sql
+```
+
+Run integration connectivity test locally:
+
+```bash
+export WORKAI_DB__DSN=postgresql://user:pass@host:5432/workai
+pytest tests/integration/test_db_connectivity.py
 ```
 
 ## Project structure
