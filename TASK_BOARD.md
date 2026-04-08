@@ -10,21 +10,21 @@ Policy: every non-trivial iteration must update this board together with
 - [x] Phase 0 bootstrap.
 - [x] Phase 1 core infrastructure.
 - [x] Phase 2 ingest layer (`Google Sheets -> sheet_cells`).
+- [x] Phase 3 parse layer (`sheet_cells -> raw_tasks`).
 
 ## In progress
 
-- [ ] Phase 3 parse layer design and `raw_tasks` contract.
+- [ ] Phase 4 normalize layer design and `tasks_normalized` contract.
 
 ## Next
 
-- [ ] Define `raw_tasks` schema and migration(s) for parse layer.
-- [ ] Implement parse module entrypoint(s) in `scripts/`.
-- [ ] Add parse unit/integration tests.
-- [ ] Extend runbook with parse operational checks.
+- [ ] Define `tasks_normalized` schema and migration(s) for normalize layer.
+- [ ] Implement normalize module entrypoint(s) in `scripts/`.
+- [ ] Add normalize unit/integration tests.
+- [ ] Extend runbook with normalize operational checks.
 
 ## Backlog
 
-- [ ] Parse layer (Phase 3).
 - [ ] Normalize layer (Phase 4).
 - [ ] Assess layer (Phase 5).
 - [ ] Knowledge base (Phase 6).

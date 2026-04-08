@@ -5,6 +5,7 @@ from WorkAI.config.settings import (
     DatabaseSettings,
     GoogleSheetsSettings,
     LoggingSettings,
+    ParseSettings,
     Settings,
     get_settings,
 )
@@ -14,6 +15,7 @@ __all__ = [
     "DatabaseSettings",
     "GoogleSheetsSettings",
     "LoggingSettings",
+    "ParseSettings",
     "Settings",
     "get_settings",
 ]

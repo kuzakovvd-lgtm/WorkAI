@@ -59,3 +59,25 @@ def test_require_dsn_raises_without_dsn(monkeypatch: pytest.MonkeyPatch) -> None
 
     with pytest.raises(ValueError, match="WORKAI_DB__DSN"):
         settings.db.require_dsn()
+
+
+def test_parse_disabled_requires_no_parse_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("WORKAI_PARSE__ENABLED", "false")
+    monkeypatch.delenv("WORKAI_PARSE__HEADER_ROW_IDX", raising=False)
+    monkeypatch.delenv("WORKAI_PARSE__EMPLOYEE_COL_IDX", raising=False)
+    monkeypatch.delenv("WORKAI_PARSE__MAX_CELLS_PER_SHEET", raising=False)
+
+    get_settings.cache_clear()
+    settings = get_settings()
+    assert settings.parse.enabled is False
+
+
+def test_parse_enabled_invalid_values_raise(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("WORKAI_PARSE__ENABLED", "true")
+    monkeypatch.setenv("WORKAI_PARSE__HEADER_ROW_IDX", "0")
+    monkeypatch.setenv("WORKAI_PARSE__EMPLOYEE_COL_IDX", "1")
+    monkeypatch.setenv("WORKAI_PARSE__MAX_CELLS_PER_SHEET", "100")
+
+    get_settings.cache_clear()
+    with pytest.raises(ValueError, match="WORKAI_PARSE__HEADER_ROW_IDX"):
+        get_settings()

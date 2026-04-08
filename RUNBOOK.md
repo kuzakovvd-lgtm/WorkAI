@@ -62,6 +62,17 @@ export WORKAI_GSHEETS__SERVICE_ACCOUNT_FILE=/path/to/service-account.json
 python scripts/workai_ingest.py run
 ```
 
+## Parse run (Phase 3)
+
+```bash
+export WORKAI_PARSE__ENABLED=true
+export WORKAI_GSHEETS__SPREADSHEET_ID=<spreadsheet-id>
+export WORKAI_PARSE__HEADER_ROW_IDX=1
+export WORKAI_PARSE__EMPLOYEE_COL_IDX=1
+export WORKAI_PARSE__DATE_FORMATS=%Y-%m-%d,%d.%m.%Y
+python scripts/workai_parse.py run
+```
+
 ## Server path conventions
 
 - v2: `/opt/WorkAI`

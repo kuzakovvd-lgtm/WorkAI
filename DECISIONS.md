@@ -33,3 +33,11 @@ This file stores short ADR-style entries.
 - Context: Full business schema was not in repository scope during Phase 1.
 - Decision: Create `0001_baseline` without domain DDL.
 - Consequences: Migration chain established; schema DDL starts in following phases.
+
+## ADR-0005: Parse idempotency uses full-refresh per sheet
+
+- Status: Accepted
+- Date: 2026-04-08
+- Context: Parse must be deterministic and safe for repeated runs without duplicate `raw_tasks`.
+- Decision: For each `(spreadsheet_id, sheet_title)` parse run deletes existing `raw_tasks` for the sheet and inserts freshly parsed rows.
+- Consequences: Stable idempotency with simple semantics; potential extra write load on large sheets (can be optimized later with optional incremental mode).

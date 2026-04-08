@@ -1,1 +1,5 @@
-"""Parse layer — extracts task rows from sheet_cells into raw_tasks."""
+"""Parse layer public API for sheet_cells -> raw_tasks."""
+
+from WorkAI.parse.runner import run_parse
+
+__all__ = ["run_parse"]

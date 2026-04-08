@@ -104,6 +104,44 @@ class GoogleSheetsSettings(BaseModel):
         return self
 
 
+class ParseSettings(BaseModel):
+    """Parse layer runtime settings."""
+
+    enabled: bool = False
+    header_row_idx: int = 1
+    employee_col_idx: int = 1
+    max_cells_per_sheet: int = 20000
+    date_formats: list[str] = Field(default_factory=lambda: ["%Y-%m-%d", "%d.%m.%Y"])
+
+    @field_validator("date_formats", mode="before")
+    @classmethod
+    def parse_date_formats_csv(cls, value: object) -> object:
+        """Allow comma-separated date formats in environment values."""
+
+        if isinstance(value, str):
+            parsed = [part.strip() for part in value.split(",") if part.strip()]
+            return parsed
+        return value
+
+    @model_validator(mode="after")
+    def validate_when_enabled(self) -> ParseSettings:
+        """Validate parse settings only for active parse runs."""
+
+        if not self.enabled:
+            return self
+
+        if self.header_row_idx <= 0:
+            raise ValueError("WORKAI_PARSE__HEADER_ROW_IDX must be > 0 when parse.enabled=true")
+        if self.employee_col_idx <= 0:
+            raise ValueError("WORKAI_PARSE__EMPLOYEE_COL_IDX must be > 0 when parse.enabled=true")
+        if self.max_cells_per_sheet <= 0:
+            raise ValueError("WORKAI_PARSE__MAX_CELLS_PER_SHEET must be > 0 when parse.enabled=true")
+        if not self.date_formats:
+            raise ValueError("WORKAI_PARSE__DATE_FORMATS must be non-empty when parse.enabled=true")
+
+        return self
+
+
 class Settings(BaseSettings):
     """Root settings object for the service."""
 
@@ -119,6 +157,7 @@ class Settings(BaseSettings):
     log: LoggingSettings = Field(default_factory=LoggingSettings)
     db: DatabaseSettings = Field(default_factory=DatabaseSettings)
     gsheets: GoogleSheetsSettings = Field(default_factory=GoogleSheetsSettings)
+    parse: ParseSettings = Field(default_factory=ParseSettings)
 
     @model_validator(mode="after")
     def sync_root_env_to_app(self) -> Settings:

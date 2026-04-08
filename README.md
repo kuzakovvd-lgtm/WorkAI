@@ -2,7 +2,7 @@
 
 Employee quality & audit system — v2 modular rewrite.
 
-**Status:** Phase 2 — Ingest layer.
+**Status:** Phase 3 — Parse layer.
 
 ## What it does
 
@@ -94,6 +94,27 @@ Google access note:
 - Share spreadsheet with service account email as Viewer (read-only mode).
 - Use bounded ranges only (`Sheet1!A1:Z200`), avoid unbounded forms (`A:Z`, `A1:Z`) to prevent huge ingest.
 - Ingest uses `batchGet` and range chunking, not per-cell API calls, to reduce quota usage.
+
+## Parse (Phase 3)
+
+Parse слой детерминированно преобразует `sheet_cells` в `raw_tasks`.
+
+- Источник архитектурного контракта: `ARCHITECTURE.md` (`parse -> raw_tasks`).
+- TODO(TZ §3.4): сверить расширенный парсинг с полным внешним ТЗ.
+
+Запуск parse вручную:
+
+```bash
+python scripts/workai_parse.py run
+```
+
+Минимальные переменные:
+
+- `WORKAI_PARSE__ENABLED=true`
+- `WORKAI_GSHEETS__SPREADSHEET_ID=<spreadsheet-id>`
+- `WORKAI_PARSE__HEADER_ROW_IDX=1`
+- `WORKAI_PARSE__EMPLOYEE_COL_IDX=1`
+- `WORKAI_PARSE__DATE_FORMATS=%Y-%m-%d,%d.%m.%Y`
 
 ## Project structure
 
