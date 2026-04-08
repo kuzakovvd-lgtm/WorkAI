@@ -14,7 +14,7 @@ Format rules:
 
 | Date | Iteration | Scope | Commit | Status | Log |
 |---|---|---|---|---|---|
-| 2026-04-08 | Phase 2 | Ingest layer (Google Sheets -> sheet_cells) | `pending` | Completed | [2026-04-08_phase-2_ingest-sheet-cells.md](./2026-04-08_phase-2_ingest-sheet-cells.md) |
+| 2026-04-08 | Phase 2 | Ingest layer (Google Sheets -> sheet_cells) | `ea4c926` | Completed | [2026-04-08_phase-2_ingest-sheet-cells.md](./2026-04-08_phase-2_ingest-sheet-cells.md) |
 | 2026-04-08 | Phase 1 | Core infrastructure (config/common/db/alembic baseline) | `566fe8d` | Completed | [2026-04-08_phase-1_core-infrastructure.md](./2026-04-08_phase-1_core-infrastructure.md) |
 | 2026-04-08 | Phase 0 | Repository bootstrap | `ed5d726` | Completed | [2026-04-08_phase-0_bootstrap.md](./2026-04-08_phase-0_bootstrap.md) |
 
