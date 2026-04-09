@@ -10,6 +10,7 @@ from datetime import date, datetime, time
 class RawTask:
     """Raw task row loaded from raw_tasks table."""
 
+    raw_task_id: int
     spreadsheet_id: str
     sheet_title: str
     row_idx: int
@@ -26,6 +27,9 @@ class RawTask:
 class NormalizedTaskRow:
     """Normalized row prepared for tasks_normalized insert."""
 
+    raw_task_id: int
+    task_date: date
+    employee_id: int
     spreadsheet_id: str
     sheet_title: str
     row_idx: int
@@ -40,7 +44,14 @@ class NormalizedTaskRow:
     time_start: time | None
     time_end: time | None
     duration_minutes: int | None
+    time_source: str
+    is_smart: bool
+    is_micro: bool
+    result_confirmed: bool
+    is_zhdun: bool
     category_code: str | None
+    task_category: str | None
+    canonical_text: str
     source_cell_ingested_at: datetime
 
 

@@ -10,9 +10,9 @@ Database schema is the formal contract between modules.
 - All modules may depend on `db`, `config`, `common`.
 - Reverse/circular imports across domain modules are forbidden.
 
-## Current contract state (Phase 2/3/4.5)
+## Current contract state (Phase 2/3/4.5/5.1)
 
-- Alembic chain: `0001_baseline` -> `0002_sheet_cells` -> `0003_raw_tasks` -> `0004_tasks_normalized` -> `0005_pipeline_errors`.
+- Alembic chain: `0001_baseline` -> `0002_sheet_cells` -> `0003_raw_tasks` -> `0004_tasks_normalized` -> `0005_pipeline_errors` -> `0006_employee_daily_ghost_time` -> `0007_tasks_norm_contract`.
 - Runtime DB access goes through `WorkAI.db` helpers and explicit `init_db()`.
 
 ### `sheet_cells` (ingest -> parse contract)
@@ -40,6 +40,10 @@ Database schema is the formal contract between modules.
 
 - Purpose: deterministic canonical form of parsed task lines for downstream assessment.
 - Natural uniqueness: `(spreadsheet_id, sheet_title, row_idx, col_idx, line_no)`.
+- Contract columns required by assess:
+  - `raw_task_id`, `task_date`, `employee_id`, `canonical_text`, `duration_minutes`,
+    `task_category`, `time_source`, `is_smart`, `is_micro`, `result_confirmed`,
+    `is_zhdun`, `normalized_at`.
 - Required lineage columns:
   - source coordinates (`spreadsheet_id`, `sheet_title`, `row_idx`, `col_idx`, `line_no`),
   - `source_cell_ingested_at` copied from parse source for traceability.
@@ -51,9 +55,28 @@ Database schema is the formal contract between modules.
 - Indexes:
   - `(spreadsheet_id, sheet_title)` for sheet-scoped refresh/read,
   - `(employee_name_norm, work_date)` for assess filtering.
+  - `(employee_id, task_date)` for assess ghost-time aggregation.
 - Idempotency expectation:
   - normalize MVP uses full-refresh per sheet/date (`DELETE sheet+date -> INSERT normalized rows`) and must not duplicate rows on repeated runs.
   - single-flight safety is enforced by advisory lock key `normalize|<spreadsheet_id>:<sheet_title>|<work_date>`.
+
+### `employees` (normalize-assigned identity contract)
+
+- Purpose: stable non-hash employee identity for downstream assess.
+- Primary key: `employee_id`.
+- Uniqueness: `employee_name_norm`.
+- Ownership:
+  - populated/upserted only by normalize,
+  - consumed by normalize + assess.
+
+### `employee_daily_ghost_time` (assess Step 1 output)
+
+- Purpose: per-employee/day ghost minutes and base trust index.
+- Primary key: `(employee_id, task_date)`.
+- Core metrics:
+  - `workday_minutes`, `logged_minutes`, `ghost_minutes`, `index_of_trust_base`.
+- Idempotency expectation:
+  - assess Step 1 uses UPSERT by `(employee_id, task_date)`; reruns update in-place without duplicates.
 
 ### `pipeline_errors` (cross-phase DLQ-style error contract)
 

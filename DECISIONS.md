@@ -81,3 +81,11 @@ This file stores short ADR-style entries.
 - Context: `pipeline_errors` can grow unbounded under persistent data-quality issues.
 - Decision: Apply 90-day retention with weekly manual cleanup batches; automate cleanup in Phase 10 ops.
 - Consequences: Controlled table growth before ops module exists; temporary manual maintenance requirement.
+
+## ADR-0011: Spec-aligned contract fields must be materialized in tasks_normalized
+
+- Status: Accepted
+- Date: 2026-04-09
+- Context: Assess Step 1 initially used reconstructive logic (derived employee id and inferred field semantics), which violated DB-contract-first architecture.
+- Decision: Contract fields required by assess are materialized in `tasks_normalized` and populated by normalize: `raw_task_id`, `task_date`, `employee_id`, `canonical_text`, `task_category`, `time_source`, `is_smart`, `is_micro`, `result_confirmed`, `is_zhdun`.
+- Consequences: Assess reads contract columns directly with no hash/equivalence reconstruction; schema migration complexity increases but cross-module behavior becomes explicit and auditable.

@@ -10,27 +10,24 @@ from psycopg import Cursor
 
 from WorkAI.assess.models import EmployeeDailyGhostTimeRow, EmployeeDayKey, EmployeeDayMetrics
 
-EMPLOYEE_ID_EXPR = "(mod(abs(hashtextextended(employee_name_norm, 0)), 2147483647) + 1)::int"
-# TODO(TZ §5.1): replace derived employee_id mapping with canonical employee dimension.
-
-LIST_EMPLOYEE_DAY_KEYS_SQL = f"""
+LIST_EMPLOYEE_DAY_KEYS_SQL = """
 SELECT DISTINCT
-    {EMPLOYEE_ID_EXPR} AS employee_id,
-    work_date
+    employee_id,
+    task_date
 FROM tasks_normalized
-WHERE work_date = %s
+WHERE task_date = %s
 ORDER BY employee_id
 """
 
-FETCH_DAY_METRICS_SQL = f"""
+FETCH_DAY_METRICS_SQL = """
 SELECT
     COALESCE(SUM(COALESCE(duration_minutes, 0)), 0)::int AS logged_minutes,
     COUNT(*)::int AS total_tasks,
-    SUM(CASE WHEN duration_minutes IS NULL THEN 1 ELSE 0 END)::int AS none_count,
-    SUM(CASE WHEN duration_minutes IS NULL THEN 1 ELSE 0 END)::int AS unconfirmed_count
+    SUM(CASE WHEN time_source = 'none' THEN 1 ELSE 0 END)::int AS none_count,
+    SUM(CASE WHEN result_confirmed = false THEN 1 ELSE 0 END)::int AS unconfirmed_count
 FROM tasks_normalized
-WHERE work_date = %s
-  AND {EMPLOYEE_ID_EXPR} = %s
+WHERE task_date = %s
+  AND employee_id = %s
 """
 
 UPSERT_GHOST_TIME_SQL = """

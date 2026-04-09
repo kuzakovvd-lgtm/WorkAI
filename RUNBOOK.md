@@ -149,6 +149,22 @@ python scripts/workai_explain_assess.py --date 2026-04-07 --sheet-id Sheet1
 
 Output is written to `docs/perf/assess_explain_<YYYY-MM-DD>.md`.
 
+## Assess run (Phase 5 Step 1)
+
+```bash
+python scripts/workai_assess.py run --date 2026-04-07
+```
+
+Assess Step 1 reads contract columns directly from `tasks_normalized`:
+
+- `employee_id`
+- `task_date`
+- `duration_minutes`
+- `time_source`
+- `result_confirmed`
+
+No assess-side reconstruction is allowed for these fields.
+
 ## Server path conventions
 
 - v2: `/opt/WorkAI`

@@ -28,6 +28,7 @@ from WorkAI.normalize.models import NormalizedTaskRow, NormalizeStats, RawTask
 from WorkAI.normalize.queries import (
     delete_tasks_normalized_for_sheet_date,
     fetch_raw_tasks,
+    get_or_create_employee_id,
     insert_tasks_normalized_batch,
 )
 from WorkAI.normalize.text_norm import normalize_task_text
@@ -145,13 +146,26 @@ def run_normalize(settings: Settings | None = None) -> None:
                         continue
 
                     try:
+                        employee_ids: dict[str, int] = {}
+                        for employee_name_norm in sorted(
+                            {row.employee_name_norm for row in result.rows}
+                        ):
+                            employee_ids[employee_name_norm] = get_or_create_employee_id(
+                                cur, employee_name_norm
+                            )
+
+                        rows_to_insert = [
+                            _with_employee_id(row, employee_ids[row.employee_name_norm])
+                            for row in result.rows
+                        ]
+
                         delete_tasks_normalized_for_sheet_date(
                             cur,
                             spreadsheet_id,
                             sheet_title,
                             work_date,
                         )
-                        for batch in _chunked(result.rows, 1000):
+                        for batch in _chunked(rows_to_insert, 1000):
                             insert_tasks_normalized_batch(cur, batch)
                         conn.commit()
                     except Exception:
@@ -230,6 +244,9 @@ def _normalize_sheet_rows(
 
             rows.append(
                 NormalizedTaskRow(
+                    raw_task_id=raw.raw_task_id,
+                    task_date=raw.work_date,
+                    employee_id=0,
                     spreadsheet_id=raw.spreadsheet_id,
                     sheet_title=raw.sheet_title,
                     row_idx=raw.row_idx,
@@ -244,7 +261,20 @@ def _normalize_sheet_rows(
                     time_start=None if time_info is None else time_info.start,
                     time_end=None if time_info is None else time_info.end,
                     duration_minutes=None if time_info is None else time_info.duration_minutes,
+                    time_source="none"
+                    if time_info is None or time_info.duration_minutes is None
+                    else "parsed",
+                    is_smart=_is_smart_task(cleaned_text),
+                    is_micro=_is_micro_task(
+                        None if time_info is None else time_info.duration_minutes
+                    ),
+                    result_confirmed=not (
+                        time_info is None or time_info.duration_minutes is None
+                    ),
+                    is_zhdun=_is_zhdun_task(cleaned_text),
                     category_code=category_code,
+                    task_category=category_code,
+                    canonical_text=cleaned_text,
                     source_cell_ingested_at=raw.cell_ingested_at,
                 )
             )
@@ -286,6 +316,51 @@ def _normalize_sheet_rows(
 
 def _source_ref(raw: RawTask) -> str:
     return f"{raw.spreadsheet_id}:{raw.sheet_title}:{raw.row_idx}:{raw.col_idx}:{raw.line_no}"
+
+
+def _with_employee_id(row: NormalizedTaskRow, employee_id: int) -> NormalizedTaskRow:
+    return NormalizedTaskRow(
+        raw_task_id=row.raw_task_id,
+        task_date=row.task_date,
+        employee_id=employee_id,
+        spreadsheet_id=row.spreadsheet_id,
+        sheet_title=row.sheet_title,
+        row_idx=row.row_idx,
+        col_idx=row.col_idx,
+        line_no=row.line_no,
+        work_date=row.work_date,
+        employee_name_raw=row.employee_name_raw,
+        employee_name_norm=row.employee_name_norm,
+        employee_match_method=row.employee_match_method,
+        task_text_raw=row.task_text_raw,
+        task_text_norm=row.task_text_norm,
+        time_start=row.time_start,
+        time_end=row.time_end,
+        duration_minutes=row.duration_minutes,
+        time_source=row.time_source,
+        is_smart=row.is_smart,
+        is_micro=row.is_micro,
+        result_confirmed=row.result_confirmed,
+        is_zhdun=row.is_zhdun,
+        category_code=row.category_code,
+        task_category=row.task_category,
+        canonical_text=row.canonical_text,
+        source_cell_ingested_at=row.source_cell_ingested_at,
+    )
+
+
+def _is_micro_task(duration_minutes: int | None) -> bool:
+    return duration_minutes is not None and duration_minutes <= 15
+
+
+def _is_zhdun_task(text: str) -> bool:
+    lowered = text.casefold()
+    return "wait" in lowered or "ожид" in lowered
+
+
+def _is_smart_task(text: str) -> bool:
+    normalized = text.strip()
+    return len(normalized) >= 20
 
 
 def _lock_key(*, sheet_id: str, work_date: date) -> str:

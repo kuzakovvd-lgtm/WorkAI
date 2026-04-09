@@ -84,7 +84,14 @@ def test_normalize_smoke() -> None:
         with connection() as conn, conn.cursor() as cur:
             cur.execute(
                 """
-                SELECT count(*), min(employee_name_norm), max(duration_minutes)
+                SELECT
+                    count(*),
+                    min(employee_name_norm),
+                    max(duration_minutes),
+                    min(employee_id),
+                    max(raw_task_id),
+                    bool_and(time_source IN ('none', 'parsed')),
+                    bool_and(result_confirmed = true)
                 FROM tasks_normalized
                 WHERE spreadsheet_id = %s
                 """,
@@ -96,5 +103,9 @@ def test_normalize_smoke() -> None:
         assert int(summary[0]) == 2
         assert summary[1] == "Alice"
         assert int(summary[2]) == 90
+        assert int(summary[3]) > 0
+        assert int(summary[4]) > 0
+        assert bool(summary[5]) is True
+        assert bool(summary[6]) is True
     finally:
         close_db()

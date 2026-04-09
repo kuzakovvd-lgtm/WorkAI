@@ -29,9 +29,93 @@ def test_assess_ghost_time_smoke() -> None:
             with conn.cursor() as cur:
                 cur.execute("DELETE FROM employee_daily_ghost_time WHERE task_date = %s", (target_date,))
                 cur.execute("DELETE FROM tasks_normalized WHERE spreadsheet_id = %s", (spreadsheet_id,))
+                cur.execute("DELETE FROM raw_tasks WHERE spreadsheet_id = %s", (spreadsheet_id,))
+                cur.execute(
+                    """
+                    INSERT INTO employees (employee_name_norm)
+                    VALUES (%s)
+                    ON CONFLICT (employee_name_norm) DO UPDATE
+                    SET employee_name_norm = EXCLUDED.employee_name_norm
+                    RETURNING employee_id
+                    """,
+                    ("assess-smoke-alice",),
+                )
+                employee_id_alice = int(cur.fetchone()[0])
+                cur.execute(
+                    """
+                    INSERT INTO employees (employee_name_norm)
+                    VALUES (%s)
+                    ON CONFLICT (employee_name_norm) DO UPDATE
+                    SET employee_name_norm = EXCLUDED.employee_name_norm
+                    RETURNING employee_id
+                    """,
+                    ("assess-smoke-bob",),
+                )
+                employee_id_bob = int(cur.fetchone()[0])
+                cur.execute(
+                    """
+                    INSERT INTO employees (employee_name_norm)
+                    VALUES (%s)
+                    ON CONFLICT (employee_name_norm) DO UPDATE
+                    SET employee_name_norm = EXCLUDED.employee_name_norm
+                    RETURNING employee_id
+                    """,
+                    ("assess-smoke-carol",),
+                )
+                employee_id_carol = int(cur.fetchone()[0])
+                cur.executemany(
+                    """
+                    INSERT INTO raw_tasks (
+                        raw_task_id,
+                        spreadsheet_id,
+                        sheet_title,
+                        row_idx,
+                        col_idx,
+                        cell_a1,
+                        cell_ingested_at,
+                        employee_name_raw,
+                        work_date,
+                        line_no,
+                        line_text,
+                        parsed_at
+                    )
+                    VALUES (%s, %s, %s, %s, %s, %s, now(), %s, %s, %s, %s, now())
+                    """,
+                    [
+                        (10001, spreadsheet_id, "Sheet1", 2, 2, "B2", "Alice", target_date, 1, "Task A"),
+                        (
+                            10002,
+                            spreadsheet_id,
+                            "Sheet1",
+                            2,
+                            2,
+                            "B2",
+                            "Alice",
+                            target_date,
+                            2,
+                            "Task B (no duration)",
+                        ),
+                        (10003, spreadsheet_id, "Sheet1", 3, 2, "B3", "Bob", target_date, 1, "Task C"),
+                        (
+                            10004,
+                            spreadsheet_id,
+                            "Sheet1",
+                            4,
+                            2,
+                            "B4",
+                            "Alice duplicate-name id",
+                            target_date,
+                            1,
+                            "Task D",
+                        ),
+                    ],
+                )
                 cur.executemany(
                     """
                     INSERT INTO tasks_normalized (
+                        raw_task_id,
+                        task_date,
+                        employee_id,
                         spreadsheet_id,
                         sheet_title,
                         row_idx,
@@ -46,17 +130,27 @@ def test_assess_ghost_time_smoke() -> None:
                         time_start,
                         time_end,
                         duration_minutes,
+                        time_source,
+                        is_smart,
+                        is_micro,
+                        result_confirmed,
+                        is_zhdun,
                         category_code,
+                        task_category,
+                        canonical_text,
                         normalized_at,
                         source_cell_ingested_at
                     )
                     VALUES (
-                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                        null, null, %s, null, now(), now()
+                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                        null, null, %s, %s, %s, %s, %s, %s, %s, %s, %s, now(), now()
                     )
                     """,
                     [
                         (
+                            10001,
+                            target_date,
+                            employee_id_alice,
                             spreadsheet_id,
                             "Sheet1",
                             2,
@@ -64,13 +158,24 @@ def test_assess_ghost_time_smoke() -> None:
                             1,
                             target_date,
                             "Alice",
-                            "Alice",
+                            "assess-smoke-alice",
                             "exact",
                             "Task A",
                             "Task A",
                             120,
+                            "parsed",
+                            False,
+                            False,
+                            True,
+                            False,
+                            "coding",
+                            "coding",
+                            "Task A",
                         ),
                         (
+                            10002,
+                            target_date,
+                            employee_id_alice,
                             spreadsheet_id,
                             "Sheet1",
                             2,
@@ -78,13 +183,24 @@ def test_assess_ghost_time_smoke() -> None:
                             2,
                             target_date,
                             "Alice",
-                            "Alice",
+                            "assess-smoke-alice",
                             "exact",
                             "Task B (no duration)",
                             "Task B (no duration)",
                             None,
+                            "none",
+                            False,
+                            False,
+                            False,
+                            False,
+                            None,
+                            None,
+                            "Task B (no duration)",
                         ),
                         (
+                            10003,
+                            target_date,
+                            employee_id_bob,
                             spreadsheet_id,
                             "Sheet1",
                             3,
@@ -92,11 +208,44 @@ def test_assess_ghost_time_smoke() -> None:
                             1,
                             target_date,
                             "Bob",
-                            "Bob",
+                            "assess-smoke-bob",
                             "exact",
                             "Task C",
                             "Task C",
                             500,
+                            "parsed",
+                            True,
+                            False,
+                            True,
+                            False,
+                            "meeting",
+                            "meeting",
+                            "Task C",
+                        ),
+                        (
+                            10004,
+                            target_date,
+                            employee_id_carol,
+                            spreadsheet_id,
+                            "Sheet1",
+                            4,
+                            2,
+                            1,
+                            target_date,
+                            "Carol",
+                            "assess-smoke-carol",
+                            "exact",
+                            "Task D",
+                            "Task D",
+                            60,
+                            "parsed",
+                            True,
+                            False,
+                            True,
+                            False,
+                            "ops",
+                            "ops",
+                            "Task D",
                         ),
                     ],
                 )
@@ -105,33 +254,24 @@ def test_assess_ghost_time_smoke() -> None:
         result_first = run_assess_ghost_time(target_date)
         result_second = run_assess_ghost_time(target_date)
 
-        assert result_first.employees_processed == 2
-        assert result_first.rows_upserted == 2
-        assert result_second.rows_upserted == 2
+        assert result_first.employees_processed == 3
+        assert result_first.rows_upserted == 3
+        assert result_second.rows_upserted == 3
 
         init_db()
         with connection() as conn, conn.cursor() as cur:
             cur.execute(
                 """
                 SELECT
-                    e.employee_name_norm,
+                    g.employee_id,
                     g.logged_minutes,
                     g.ghost_minutes,
                     g.index_of_trust_base
                 FROM employee_daily_ghost_time AS g
-                JOIN (
-                    SELECT DISTINCT
-                        employee_name_norm,
-                        (mod(abs(hashtextextended(employee_name_norm, 0)), 2147483647) + 1)::int AS employee_id
-                    FROM tasks_normalized
-                    WHERE spreadsheet_id = %s
-                      AND work_date = %s
-                ) AS e
-                  ON e.employee_id = g.employee_id
                 WHERE g.task_date = %s
-                ORDER BY e.employee_name_norm
+                ORDER BY g.employee_id
                 """,
-                (spreadsheet_id, target_date, target_date),
+                (target_date,),
             )
             rows = cur.fetchall()
 
@@ -142,16 +282,27 @@ def test_assess_ghost_time_smoke() -> None:
             total = cur.fetchone()
 
         assert total is not None
-        assert int(total[0]) == 2
+        assert int(total[0]) == 3
 
-        assert rows[0][0] == "Alice"
-        assert int(rows[0][1]) == 120
-        assert int(rows[0][2]) == 360
-        assert Decimal(str(rows[0][3])) == Decimal("0.500")
+        by_employee_id = {int(row[0]): row for row in rows}
+        assert employee_id_alice in by_employee_id
+        assert employee_id_bob in by_employee_id
+        assert employee_id_carol in by_employee_id
 
-        assert rows[1][0] == "Bob"
-        assert int(rows[1][1]) == 500
-        assert int(rows[1][2]) == 0
-        assert Decimal(str(rows[1][3])) == Decimal("1.000")
+        alice_row = by_employee_id[employee_id_alice]
+        assert int(alice_row[1]) == 120
+        assert int(alice_row[2]) == 360
+        assert Decimal(str(alice_row[3])) == Decimal("0.500")
+
+        bob_row = by_employee_id[employee_id_bob]
+        assert int(bob_row[1]) == 500
+        assert int(bob_row[2]) == 0
+        assert Decimal(str(bob_row[3])) == Decimal("1.000")
+
+        # Regression guard: assess must use contract employee_id values, not recomputed ids.
+        carol_row = by_employee_id[employee_id_carol]
+        assert int(carol_row[1]) == 60
+        assert int(carol_row[2]) == 420
+        assert Decimal(str(carol_row[3])) == Decimal("1.000")
     finally:
         close_db()
