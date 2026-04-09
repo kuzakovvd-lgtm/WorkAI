@@ -13,8 +13,8 @@ Status date: 2026-04-09
 | 4 | Normalize layer | Done | Canonical `tasks_normalized` contract + migrations |
 | 5 | Assess layer | Done | Ghost time, scoring, aggregation, and Bayesian norms in DB-driven pipeline |
 | 6 | Knowledge base | Done | Markdown indexing + PostgreSQL FTS lookup + cache + CLI |
-| 7 | Audit layer | In progress | CrewAI 3-agent sequential audit with cache/force and usage telemetry |
-| 8 | API layer | Planned | FastAPI endpoints with auth and health endpoints |
+| 7 | Audit layer | Done | CrewAI 3-agent sequential audit with cache/force and usage telemetry |
+| 8 | API layer | In progress | FastAPI endpoints with auth, health, tasks, analysis, team, and debug routes |
 | 9 | Notifier | Planned | Telegram alerts by severity and routing rules |
 | 10 | Ops layer | Planned | Healthcheck/sweepers/rollups and operational automation |
 | 11 | Migration & cutover from v1 | Planned | Controlled parallel run and safe production switchover |
@@ -22,4 +22,4 @@ Status date: 2026-04-09
 
 ## Current focus
 
-Phase 7 AI audit implementation and validation.
+Phase 8 API implementation and validation.

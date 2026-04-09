@@ -206,6 +206,12 @@ class AuditSettings(BaseModel):
         return self
 
 
+class ApiSettings(BaseModel):
+    """HTTP API configuration."""
+
+    api_key: str | None = Field(default=None, validation_alias="WORKAI_API_KEY")
+
+
 class Settings(BaseSettings):
     """Root settings object for the service."""
 
@@ -224,6 +230,7 @@ class Settings(BaseSettings):
     parse: ParseSettings = Field(default_factory=ParseSettings)
     normalize: NormalizeSettings = Field(default_factory=NormalizeSettings)
     audit: AuditSettings = Field(default_factory=AuditSettings)
+    api: ApiSettings = Field(default_factory=ApiSettings)
 
     @model_validator(mode="after")
     def sync_root_env_to_app(self) -> Settings:

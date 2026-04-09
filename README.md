@@ -2,7 +2,7 @@
 
 Employee quality & audit system — v2 modular rewrite.
 
-**Status:** Phase 7 — AI Audit (CrewAI) layer.
+**Status:** Phase 8 — API (FastAPI) layer.
 
 ## What it does
 
@@ -203,6 +203,28 @@ Run audit from CLI:
 python scripts/run_audit.py run --employee-id 42 --date 2026-04-09
 python scripts/run_audit.py run --employee-id 42 --date 2026-04-09 --force
 ```
+
+## API (Phase 8)
+
+FastAPI app now exposes HTTP endpoints for health, tasks, analysis, team and debug reads.
+
+- App import path: `WorkAI.api.main:app`
+- Version header: `X-WorkAI-Version: 2.0.0`
+- Auth: `X-API-Key` required for all endpoints except `GET /health`
+- Blocking operations are executed via `asyncio.to_thread(...)`
+
+Run API server:
+
+```bash
+python scripts/workai_api.py run --host 127.0.0.1 --port 8000
+# or
+uvicorn WorkAI.api.main:app
+```
+
+Required API env:
+
+- `WORKAI_API_KEY=<secret>`
+- `WORKAI_DB__DSN=postgresql://user:pass@host:5432/workai`
 
 ## Project structure
 

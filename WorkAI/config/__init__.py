@@ -1,6 +1,7 @@
 """Configuration layer public API."""
 
 from WorkAI.config.settings import (
+    ApiSettings,
     AppSettings,
     AuditSettings,
     DatabaseSettings,
@@ -13,6 +14,7 @@ from WorkAI.config.settings import (
 )
 
 __all__ = [
+    "ApiSettings",
     "AppSettings",
     "AuditSettings",
     "DatabaseSettings",
