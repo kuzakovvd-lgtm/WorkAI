@@ -23,7 +23,10 @@ def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="WorkAI assess runner")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    run_parser = subparsers.add_parser("run", help="Run assess step1(ghost_time) + step2(scoring)")
+    run_parser = subparsers.add_parser(
+        "run",
+        help="Run assess step1(ghost_time) + step2(scoring) + step3(aggregation)",
+    )
     run_parser.add_argument("--date", dest="target_date", required=True, type=_parse_date)
 
     ghost_parser = subparsers.add_parser("run-ghost-time", help="Run only assess step1 ghost_time")
@@ -32,11 +35,19 @@ def _build_parser() -> argparse.ArgumentParser:
     scoring_parser = subparsers.add_parser("run-scoring", help="Run only assess step2 scoring")
     scoring_parser.add_argument("--date", dest="target_date", required=True, type=_parse_date)
 
+    aggregation_parser = subparsers.add_parser("run-aggregation", help="Run only assess step3 aggregation")
+    aggregation_parser.add_argument("--date", dest="target_date", required=True, type=_parse_date)
+
     return parser
 
 
 def main() -> int:
-    from WorkAI.assess import run_assess, run_assess_ghost_time, run_assess_scoring
+    from WorkAI.assess import (
+        run_assess,
+        run_assess_aggregation,
+        run_assess_ghost_time,
+        run_assess_scoring,
+    )
     from WorkAI.common import get_logger
 
     parser = _build_parser()
@@ -51,6 +62,7 @@ def main() -> int:
                 target_date=result.target_date.isoformat(),
                 ghost_rows_upserted=result.ghost_time.rows_upserted,
                 scoring_rows_upserted=result.scoring.rows_upserted,
+                aggregation_cycles_written=result.aggregation.cycles_written,
             )
             return 0
 
@@ -69,6 +81,15 @@ def main() -> int:
                 "assess_cli_scoring_done",
                 target_date=result.target_date.isoformat(),
                 rows_upserted=result.rows_upserted,
+            )
+            return 0
+
+        if args.command == "run-aggregation":
+            result = run_assess_aggregation(args.target_date)
+            logger.info(
+                "assess_cli_aggregation_done",
+                target_date=result.target_date.isoformat(),
+                cycles_written=result.cycles_written,
             )
             return 0
     except Exception:

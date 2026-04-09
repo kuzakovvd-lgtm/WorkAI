@@ -10,9 +10,9 @@ Database schema is the formal contract between modules.
 - All modules may depend on `db`, `config`, `common`.
 - Reverse/circular imports across domain modules are forbidden.
 
-## Current contract state (Phase 2/3/4.5/5.1)
+## Current contract state (Phase 2/3/4.5/5.3)
 
-- Alembic chain: `0001_baseline` -> `0002_sheet_cells` -> `0003_raw_tasks` -> `0004_tasks_normalized` -> `0005_pipeline_errors` -> `0006_employee_daily_ghost_time` -> `0007_tasks_norm_contract`.
+- Alembic chain: `0001_baseline` -> `0002_sheet_cells` -> `0003_raw_tasks` -> `0004_tasks_normalized` -> `0005_pipeline_errors` -> `0006_employee_daily_ghost_time` -> `0007_tasks_norm_contract` -> `0008_daily_task_assess` -> `0009_tasks_norm_time_source` -> `0010_operational_cycles`.
 - Runtime DB access goes through `WorkAI.db` helpers and explicit `init_db()`.
 
 ### `sheet_cells` (ingest -> parse contract)
@@ -77,6 +77,30 @@ Database schema is the formal contract between modules.
   - `workday_minutes`, `logged_minutes`, `ghost_minutes`, `index_of_trust_base`.
 - Idempotency expectation:
   - assess Step 1 uses UPSERT by `(employee_id, task_date)`; reruns update in-place without duplicates.
+
+### `daily_task_assessments` (assess Step 2 output)
+
+- Purpose: per-task deterministic scoring values (`quality_score`, `smart_score`) linked to normalized tasks.
+- Primary key: `id` (bigserial).
+- Uniqueness: `normalized_task_id`.
+- Indexes:
+  - `(employee_id, task_date)` for day-level rollups and Step 3 joins.
+- Idempotency expectation:
+  - assess Step 2 uses UPSERT on `normalized_task_id`; reruns update row scores in place.
+
+### `operational_cycles` (assess Step 3 output, assess -> audit contract)
+
+- Purpose: deterministic aggregation of normalized tasks into operational cycles.
+- Primary key: `id` (bigserial).
+- Uniqueness: `(employee_id, task_date, cycle_key)`.
+- Core payload:
+  - `canonical_text`, `task_category`, `total_duration_minutes`, `tasks_count`,
+    `is_zhdun`, `avg_quality_score`, `avg_smart_score`.
+- Indexes:
+  - `(employee_id, task_date)` for employee/day fetch,
+  - `(task_date)` for day-wide operational/audit prefetch.
+- Idempotency expectation:
+  - assess Step 3 rebuilds cycles per `(employee_id, task_date)` partition and writes deterministic keys; reruns on the same snapshot produce the same cycle keys and metrics.
 
 ### `pipeline_errors` (cross-phase DLQ-style error contract)
 

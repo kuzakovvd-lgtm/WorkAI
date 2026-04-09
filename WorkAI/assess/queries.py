@@ -1,19 +1,22 @@
-"""SQL helpers for assess ghost-time and scoring steps."""
+"""SQL helpers for assess ghost-time, scoring, and aggregation steps."""
 
 from __future__ import annotations
 
 from collections.abc import Sequence
 from datetime import date
+from decimal import Decimal
 from typing import Any, cast
 
 from psycopg import Cursor
 
 from WorkAI.assess.models import (
+    AssessmentTaskForAggregation,
     DailyTaskAssessmentRow,
     EmployeeDailyGhostTimeRow,
     EmployeeDayKey,
     EmployeeDayMetrics,
     NormalizedTaskForScoring,
+    OperationalCycleRow,
 )
 
 LIST_EMPLOYEE_DAY_KEYS_SQL = """
@@ -110,6 +113,70 @@ DO UPDATE SET
     quality_score = EXCLUDED.quality_score,
     smart_score = EXCLUDED.smart_score,
     assessed_at = now()
+"""
+
+FETCH_AGGREGATION_INPUT_BY_DATE_SQL = """
+SELECT
+    tn.id,
+    tn.employee_id,
+    tn.task_date,
+    tn.spreadsheet_id,
+    tn.sheet_title,
+    tn.row_idx,
+    tn.col_idx,
+    tn.line_no,
+    tn.canonical_text,
+    tn.task_category,
+    tn.duration_minutes,
+    tn.is_micro,
+    tn.is_zhdun,
+    dta.quality_score,
+    dta.smart_score
+FROM tasks_normalized AS tn
+LEFT JOIN daily_task_assessments AS dta
+  ON dta.normalized_task_id = tn.id
+WHERE tn.task_date = %s
+ORDER BY
+    tn.employee_id,
+    tn.task_date,
+    tn.sheet_title,
+    tn.row_idx,
+    tn.col_idx,
+    tn.line_no,
+    tn.id
+"""
+
+DELETE_OPERATIONAL_CYCLES_FOR_EMPLOYEE_DAY_SQL = """
+DELETE FROM operational_cycles
+WHERE employee_id = %s
+  AND task_date = %s
+"""
+
+UPSERT_OPERATIONAL_CYCLE_SQL = """
+INSERT INTO operational_cycles (
+    employee_id,
+    task_date,
+    cycle_key,
+    canonical_text,
+    task_category,
+    total_duration_minutes,
+    tasks_count,
+    is_zhdun,
+    avg_quality_score,
+    avg_smart_score,
+    created_at
+)
+VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, now())
+ON CONFLICT (employee_id, task_date, cycle_key)
+DO UPDATE SET
+    canonical_text = EXCLUDED.canonical_text,
+    task_category = EXCLUDED.task_category,
+    total_duration_minutes = EXCLUDED.total_duration_minutes,
+    tasks_count = EXCLUDED.tasks_count,
+    is_zhdun = EXCLUDED.is_zhdun,
+    avg_quality_score = EXCLUDED.avg_quality_score,
+    avg_smart_score = EXCLUDED.avg_smart_score,
+    created_at = now()
 """
 
 
@@ -248,6 +315,56 @@ def upsert_daily_task_assessments_batch(
     )
 
 
+def fetch_aggregation_input_by_date(
+    cur: Cursor[object],
+    target_date: date,
+) -> list[AssessmentTaskForAggregation]:
+    """Fetch normalized tasks joined with scoring values for aggregation."""
+
+    cur.execute(FETCH_AGGREGATION_INPUT_BY_DATE_SQL, (target_date,))
+    rows = cast(list[tuple[Any, ...]], cur.fetchall())
+    return [_row_to_aggregation_input(row) for row in rows]
+
+
+def delete_operational_cycles_for_employee_day(
+    cur: Cursor[object],
+    employee_id: int,
+    target_date: date,
+) -> None:
+    """Delete operational cycles for one employee/day partition."""
+
+    cur.execute(DELETE_OPERATIONAL_CYCLES_FOR_EMPLOYEE_DAY_SQL, (employee_id, target_date))
+
+
+def upsert_operational_cycles_batch(
+    cur: Cursor[object],
+    rows: Sequence[OperationalCycleRow],
+) -> None:
+    """Batch upsert operational cycles rows."""
+
+    if not rows:
+        return
+
+    cur.executemany(
+        UPSERT_OPERATIONAL_CYCLE_SQL,
+        [
+            (
+                row.employee_id,
+                row.task_date,
+                row.cycle_key,
+                row.canonical_text,
+                row.task_category,
+                row.total_duration_minutes,
+                row.tasks_count,
+                row.is_zhdun,
+                row.avg_quality_score,
+                row.avg_smart_score,
+            )
+            for row in rows
+        ],
+    )
+
+
 def _row_to_scoring_task(row: tuple[Any, ...]) -> NormalizedTaskForScoring:
     return NormalizedTaskForScoring(
         normalized_task_id=int(row[0]),
@@ -259,4 +376,26 @@ def _row_to_scoring_task(row: tuple[Any, ...]) -> NormalizedTaskForScoring:
         is_micro=bool(row[6]),
         result_confirmed=bool(row[7]),
         is_zhdun=bool(row[8]),
+    )
+
+
+def _row_to_aggregation_input(row: tuple[Any, ...]) -> AssessmentTaskForAggregation:
+    quality_score = None if row[13] is None else cast(Decimal, row[13])
+    smart_score = None if row[14] is None else cast(Decimal, row[14])
+    return AssessmentTaskForAggregation(
+        normalized_task_id=int(row[0]),
+        employee_id=int(row[1]),
+        task_date=cast(date, row[2]),
+        spreadsheet_id=str(row[3]),
+        sheet_title=str(row[4]),
+        row_idx=int(row[5]),
+        col_idx=int(row[6]),
+        line_no=int(row[7]),
+        canonical_text=str(row[8]),
+        task_category=None if row[9] is None else str(row[9]),
+        duration_minutes=None if row[10] is None else int(row[10]),
+        is_micro=bool(row[11]),
+        is_zhdun=bool(row[12]),
+        quality_score=quality_score,
+        smart_score=smart_score,
     )

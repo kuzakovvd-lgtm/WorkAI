@@ -1,24 +1,32 @@
-"""Assess runner for Phase 5 Step 1+2: ghost time and task scoring."""
+"""Assess runner for Phase 5 Step 1/2/3: ghost time, scoring, aggregation."""
 
 from __future__ import annotations
 
+from collections import defaultdict
 from datetime import date
 from decimal import ROUND_HALF_UP, Decimal
 
+from WorkAI.assess.aggregation import aggregate_operational_cycles
 from WorkAI.assess.ghost_time import calculate_ghost_minutes, calculate_index_of_trust_base
 from WorkAI.assess.models import (
+    AssessAggregationResult,
     AssessGhostTimeResult,
+    AssessmentTaskForAggregation,
     AssessRunResult,
     AssessScoringResult,
     DailyTaskAssessmentRow,
     EmployeeDailyGhostTimeRow,
+    OperationalCycleRow,
 )
 from WorkAI.assess.queries import (
+    delete_operational_cycles_for_employee_day,
+    fetch_aggregation_input_by_date,
     fetch_employee_day_metrics,
     fetch_scoring_tasks_by_date,
     list_employee_day_keys,
     upsert_daily_task_assessments_batch,
     upsert_employee_daily_ghost_time_batch,
+    upsert_operational_cycles_batch,
 )
 from WorkAI.assess.scoring import compute_quality_score, compute_smart_score
 from WorkAI.common import configure_logging, get_logger
@@ -30,6 +38,12 @@ _LOG = get_logger(__name__)
 
 def _quantize_score(value: float) -> Decimal:
     return Decimal(str(value)).quantize(Decimal("0.001"), rounding=ROUND_HALF_UP)
+
+
+def _quantize_decimal(value: Decimal | None) -> Decimal | None:
+    if value is None:
+        return None
+    return value.quantize(Decimal("0.001"), rounding=ROUND_HALF_UP)
 
 
 def run_assess_ghost_time(target_date: date, settings: Settings | None = None) -> AssessGhostTimeResult:
@@ -135,20 +149,89 @@ def run_assess_scoring(target_date: date, settings: Settings | None = None) -> A
     return result
 
 
+def run_assess_aggregation(target_date: date, settings: Settings | None = None) -> AssessAggregationResult:
+    """Run deterministic aggregation into operational_cycles for target date."""
+
+    resolved = settings or get_settings()
+    configure_logging(resolved)
+    init_db(resolved)
+    grouped: dict[tuple[int, date], list[AssessmentTaskForAggregation]] = defaultdict(list)
+    cycles_written = 0
+    tasks_aggregated = 0
+
+    try:
+        with connection() as conn:
+            with conn.cursor() as cur:
+                input_rows = fetch_aggregation_input_by_date(cur, target_date)
+                for row in input_rows:
+                    grouped[(row.employee_id, row.task_date)].append(row)
+
+                for (employee_id, day), rows in grouped.items():
+                    cycles = aggregate_operational_cycles(rows)
+                    quantized_cycles = [
+                        OperationalCycleRow(
+                            employee_id=cycle.employee_id,
+                            task_date=cycle.task_date,
+                            cycle_key=cycle.cycle_key,
+                            canonical_text=cycle.canonical_text,
+                            task_category=cycle.task_category,
+                            total_duration_minutes=cycle.total_duration_minutes,
+                            tasks_count=cycle.tasks_count,
+                            is_zhdun=cycle.is_zhdun,
+                            avg_quality_score=_quantize_decimal(cycle.avg_quality_score),
+                            avg_smart_score=_quantize_decimal(cycle.avg_smart_score),
+                        )
+                        for cycle in cycles
+                    ]
+
+                    # MVP strategy: delete+rebuild per employee/date to avoid stale cycles
+                    # when upstream normalize/scoring data changes between runs.
+                    delete_operational_cycles_for_employee_day(cur, employee_id, day)
+                    upsert_operational_cycles_batch(cur, quantized_cycles)
+                    cycles_written += len(quantized_cycles)
+                    tasks_aggregated += len(rows)
+
+            conn.commit()
+    finally:
+        close_db()
+
+    result = AssessAggregationResult(
+        target_date=target_date,
+        employees_processed=len(grouped),
+        cycles_written=cycles_written,
+        tasks_aggregated=tasks_aggregated,
+    )
+    _LOG.info(
+        "assess_aggregation_completed",
+        target_date=target_date.isoformat(),
+        employees_processed=result.employees_processed,
+        cycles_written=result.cycles_written,
+        tasks_aggregated=result.tasks_aggregated,
+    )
+    return result
+
+
 def run_assess(target_date: date, settings: Settings | None = None) -> AssessRunResult:
-    """Run assess step1+step2 for a specific date in sequence."""
+    """Run assess step1+step2+step3 for a specific date in sequence."""
 
     resolved = settings or get_settings()
     configure_logging(resolved)
 
     ghost = run_assess_ghost_time(target_date, settings=resolved)
     scoring = run_assess_scoring(target_date, settings=resolved)
+    aggregation = run_assess_aggregation(target_date, settings=resolved)
 
-    result = AssessRunResult(target_date=target_date, ghost_time=ghost, scoring=scoring)
+    result = AssessRunResult(
+        target_date=target_date,
+        ghost_time=ghost,
+        scoring=scoring,
+        aggregation=aggregation,
+    )
     _LOG.info(
         "assess_run_completed",
         target_date=target_date.isoformat(),
         ghost_rows_upserted=ghost.rows_upserted,
         scoring_rows_upserted=scoring.rows_upserted,
+        aggregation_cycles_written=aggregation.cycles_written,
     )
     return result

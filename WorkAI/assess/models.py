@@ -1,4 +1,4 @@
-"""Assess layer models for ghost-time and task-scoring steps."""
+"""Assess layer models for ghost-time, scoring, and aggregation steps."""
 
 from __future__ import annotations
 
@@ -85,9 +85,57 @@ class AssessScoringResult:
 
 
 @dataclass(frozen=True)
+class AssessmentTaskForAggregation:
+    """Joined normalized+scoring payload used by aggregation step."""
+
+    normalized_task_id: int
+    employee_id: int
+    task_date: date
+    spreadsheet_id: str
+    sheet_title: str
+    row_idx: int
+    col_idx: int
+    line_no: int
+    canonical_text: str
+    task_category: str | None
+    duration_minutes: int | None
+    is_micro: bool
+    is_zhdun: bool
+    quality_score: Decimal | None
+    smart_score: Decimal | None
+
+
+@dataclass(frozen=True)
+class OperationalCycleRow:
+    """Row payload for operational_cycles upsert."""
+
+    employee_id: int
+    task_date: date
+    cycle_key: str
+    canonical_text: str
+    task_category: str
+    total_duration_minutes: int
+    tasks_count: int
+    is_zhdun: bool
+    avg_quality_score: Decimal | None
+    avg_smart_score: Decimal | None
+
+
+@dataclass(frozen=True)
+class AssessAggregationResult:
+    """Runner summary for aggregation execution."""
+
+    target_date: date
+    employees_processed: int
+    cycles_written: int
+    tasks_aggregated: int
+
+
+@dataclass(frozen=True)
 class AssessRunResult:
-    """Combined assess run result (step1 + step2)."""
+    """Combined assess run result (step1 + step2 + step3)."""
 
     target_date: date
     ghost_time: AssessGhostTimeResult
     scoring: AssessScoringResult
+    aggregation: AssessAggregationResult

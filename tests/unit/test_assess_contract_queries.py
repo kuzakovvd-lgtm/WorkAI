@@ -21,3 +21,9 @@ def test_scoring_queries_use_contract_task_fields_only() -> None:
     assert "time_source" in queries.FETCH_SCORING_TASKS_BY_DATE_SQL
     assert "result_confirmed" in queries.FETCH_SCORING_TASKS_BY_DATE_SQL
     assert "is_smart" in queries.FETCH_SCORING_TASKS_BY_DATE_SQL
+
+
+def test_aggregation_queries_use_db_contract_tables() -> None:
+    assert "FROM tasks_normalized AS tn" in queries.FETCH_AGGREGATION_INPUT_BY_DATE_SQL
+    assert "LEFT JOIN daily_task_assessments AS dta" in queries.FETCH_AGGREGATION_INPUT_BY_DATE_SQL
+    assert "INSERT INTO operational_cycles" in queries.UPSERT_OPERATIONAL_CYCLE_SQL

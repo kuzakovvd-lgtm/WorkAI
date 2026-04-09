@@ -89,3 +89,11 @@ This file stores short ADR-style entries.
 - Context: Assess Step 1 initially used reconstructive logic (derived employee id and inferred field semantics), which violated DB-contract-first architecture.
 - Decision: Contract fields required by assess are materialized in `tasks_normalized` and populated by normalize: `raw_task_id`, `task_date`, `employee_id`, `canonical_text`, `task_category`, `time_source`, `is_smart`, `is_micro`, `result_confirmed`, `is_zhdun`.
 - Consequences: Assess reads contract columns directly with no hash/equivalence reconstruction; schema migration complexity increases but cross-module behavior becomes explicit and auditable.
+
+## ADR-0012: Aggregation output is persisted in operational_cycles
+
+- Status: Accepted
+- Date: 2026-04-09
+- Context: Step 3 aggregation must provide deterministic and re-readable output for future audit layer; runtime-only aggregation is not a stable cross-module contract.
+- Decision: Persist aggregation result in dedicated table `operational_cycles` with unique key `(employee_id, task_date, cycle_key)`.
+- Consequences: Audit and downstream consumers can read stable aggregated cycles from DB; aggregation runner uses deterministic cycle keys and per employee/day refresh semantics to avoid stale rows.
