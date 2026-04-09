@@ -105,3 +105,15 @@ This file stores short ADR-style entries.
 - Context: Product baseline prior catalog is not yet fully transferred into repository, but Step 4 requires deterministic priors for Bayesian update.
 - Decision: Store temporary baseline priors in `WorkAI.assess.bayesian_norms.BASELINE_PRIORS_MINUTES` as a centralized replaceable mapping.
 - Consequences: Bayesian updates are deterministic and transparent now; priors can be swapped later without changing DB contract or runner API.
+
+## ADR-0014: Knowledge base uses soft-sync indexing + explicit cache clear
+
+- Status: Accepted
+- Date: 2026-04-09
+- Context: Phase 6 needs idempotent markdown indexing and fast lookup without introducing operationally risky deletions or external search infrastructure.
+- Decision:
+  - persist methodology corpus in `knowledge_base_articles`;
+  - index with UPSERT by `source_path`;
+  - use soft-sync in MVP (do not auto-delete rows for missing files);
+  - use lookup LRU cache (`maxsize=100`) by `(query, limit)` and clear cache after index run.
+- Consequences: predictable reruns and safe first rollout; stale rows from deleted files may remain until future cleanup policy/full-sync mode is introduced.

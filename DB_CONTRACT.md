@@ -10,9 +10,9 @@ Database schema is the formal contract between modules.
 - All modules may depend on `db`, `config`, `common`.
 - Reverse/circular imports across domain modules are forbidden.
 
-## Current contract state (Phase 2/3/4.5/5.4)
+## Current contract state (Phase 2/3/4.5/5.4/6)
 
-- Alembic chain: `0001_baseline` -> `0002_sheet_cells` -> `0003_raw_tasks` -> `0004_tasks_normalized` -> `0005_pipeline_errors` -> `0006_employee_daily_ghost_time` -> `0007_tasks_norm_contract` -> `0008_daily_task_assess` -> `0009_tasks_norm_time_source` -> `0010_operational_cycles` -> `0011_dynamic_task_norms`.
+- Alembic chain: `0001_baseline` -> `0002_sheet_cells` -> `0003_raw_tasks` -> `0004_tasks_normalized` -> `0005_pipeline_errors` -> `0006_employee_daily_ghost_time` -> `0007_tasks_norm_contract` -> `0008_daily_task_assess` -> `0009_tasks_norm_time_source` -> `0010_operational_cycles` -> `0011_dynamic_task_norms` -> `0012_knowledge_base_articles`.
 - Runtime DB access goes through `WorkAI.db` helpers and explicit `init_db()`.
 
 ### `sheet_cells` (ingest -> parse contract)
@@ -128,6 +128,21 @@ Database schema is the formal contract between modules.
   - `(run_id)` for per-run troubleshooting.
 - Retention:
   - MVP policy is 90 days with periodic cleanup batches (see `RUNBOOK.md`).
+
+### `knowledge_base_articles` (knowledge_base -> audit contract)
+
+- Purpose: persistent methodology corpus indexed from markdown sources for FTS lookup.
+- Primary key: `id` (bigserial).
+- Uniqueness: `source_path`.
+- Core payload:
+  - `title`, `body`, `tags`, `indexed_at`.
+  - generated stored `fts` vector:
+    - `to_tsvector('russian', coalesce(title,'') || ' ' || coalesce(body,''))`.
+- Indexes:
+  - `GIN (fts)` for full-text queries.
+- Idempotency expectation:
+  - knowledge indexer uses UPSERT by `source_path`; reruns update existing rows and do not duplicate.
+  - MVP sync strategy is soft-sync: rows are not deleted when source files disappear from disk.
 
 ## Invariants
 

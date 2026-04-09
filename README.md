@@ -2,7 +2,7 @@
 
 Employee quality & audit system — v2 modular rewrite.
 
-**Status:** Phase 4 — Normalize layer.
+**Status:** Phase 6 — Knowledge Base layer.
 
 ## What it does
 
@@ -153,6 +153,35 @@ python scripts/workai_normalize.py run
 ```bash
 python scripts/workai_explain_assess.py --date 2026-04-07
 ```
+
+## Knowledge Base (Phase 6)
+
+Knowledge Base indexes methodology markdown files into PostgreSQL and provides FTS lookup.
+
+- Source directory (default): `/etc/workai/knowledge/sources/*.md`
+- Sync strategy (MVP): **soft-sync** (missing files are not deleted from DB).
+- Lookup SQL uses PostgreSQL FTS primitives:
+  - `websearch_to_tsquery('russian', ...)`
+  - `ts_rank(...)`
+
+Run indexer:
+
+```bash
+python scripts/run_index_knowledge.py run
+python scripts/run_index_knowledge.py run --source-dir /tmp/workai-knowledge
+```
+
+Lookup from Python:
+
+```python
+from WorkAI.knowledge_base import lookup_methodology
+results = lookup_methodology("ghost time", limit=5)
+```
+
+Notes:
+
+- Lookup uses LRU cache (`maxsize=100`) keyed by `(query, limit)`.
+- Cache is explicitly cleared after each indexing run.
 
 ## Project structure
 

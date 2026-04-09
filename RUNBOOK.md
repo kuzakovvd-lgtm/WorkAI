@@ -165,6 +165,31 @@ Assess Step 1 reads contract columns directly from `tasks_normalized`:
 
 No assess-side reconstruction is allowed for these fields.
 
+## Knowledge Base run (Phase 6)
+
+Index markdown sources into PostgreSQL:
+
+```bash
+python scripts/run_index_knowledge.py run
+python scripts/run_index_knowledge.py run --source-dir /tmp/workai-knowledge
+```
+
+Lookup example:
+
+```bash
+python - <<'PY'
+from WorkAI.knowledge_base import lookup_methodology
+print(lookup_methodology("ghost time", limit=5))
+PY
+```
+
+Phase 6 policy:
+
+- source directory default: `/etc/workai/knowledge/sources`;
+- sync mode: **soft-sync** (missing files are not auto-deleted from DB);
+- lookup uses LRU cache (`maxsize=100`) by `(query, limit)`;
+- cache is explicitly cleared after each successful index run.
+
 ## Server path conventions
 
 - v2: `/opt/WorkAI`

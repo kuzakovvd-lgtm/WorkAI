@@ -1,6 +1,6 @@
 # WorkAI Roadmap
 
-Status date: 2026-04-08
+Status date: 2026-04-09
 
 ## Phases
 
@@ -11,8 +11,8 @@ Status date: 2026-04-08
 | 2 | Ingest layer | Done | Source pull into `sheet_cells`, retries, observability, CLI entrypoint |
 | 3 | Parse layer | Done | Deterministic parsing into `raw_tasks`, CLI and unit/integration tests |
 | 4 | Normalize layer | Done | Canonical `tasks_normalized` contract + migrations |
-| 5 | Assess layer | Planned | Scoring and ghost-time calculations with reproducible rules |
-| 6 | Knowledge base | Planned | Searchable methodology storage and retrieval |
+| 5 | Assess layer | Done | Ghost time, scoring, aggregation, and Bayesian norms in DB-driven pipeline |
+| 6 | Knowledge base | In progress | Markdown indexing + PostgreSQL FTS lookup + cache + CLI |
 | 7 | Audit layer | Planned | Multi-agent AI audit orchestration |
 | 8 | API layer | Planned | FastAPI endpoints with auth and health endpoints |
 | 9 | Notifier | Planned | Telegram alerts by severity and routing rules |
@@ -22,5 +22,4 @@ Status date: 2026-04-08
 
 ## Current focus
 
-Phase 4.5 hardening complete; next focus is Phase 5 assess contract
-(`tasks_normalized` -> `daily_task_assessments`).
+Phase 6 Knowledge Base implementation and validation.
