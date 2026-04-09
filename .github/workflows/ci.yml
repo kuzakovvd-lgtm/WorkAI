@@ -126,5 +126,13 @@ jobs:
             exit 1
           fi
 
+      - name: Ops integration smoke (must not skip)
+        run: |
+          pytest -q tests/integration/test_ops_smoke.py -rA | tee /tmp/ops_smoke.txt
+          if grep -Eq "SKIPPED| [0-9]+ skipped" /tmp/ops_smoke.txt; then
+            echo "Ops integration smoke was skipped, expected real execution"
+            exit 1
+          fi
+
       - name: Integration tests (PostgreSQL)
         run: pytest -q -m integration
