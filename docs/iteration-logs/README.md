@@ -14,7 +14,8 @@ Format rules:
 
 | Date | Iteration | Scope | Commit | Status | Log |
 |---|---|---|---|---|---|
-| 2026-04-09 | Phase 9 | Notifier layer (Telegram routing + `notification_log` + smoke tests) | `pending` | In progress | [2026-04-09_phase-9_notifier.md](./2026-04-09_phase-9_notifier.md) |
+| 2026-04-09 | Phase 10 | Operations layer (healthcheck + sweeper + rollup + verify_units) | `pending` | In progress | [2026-04-09_phase-10_operations.md](./2026-04-09_phase-10_operations.md) |
+| 2026-04-09 | Phase 9 | Notifier layer (Telegram routing + `notification_log` + smoke tests) | `9246314` | Completed | [2026-04-09_phase-9_notifier.md](./2026-04-09_phase-9_notifier.md) |
 | 2026-04-09 | Phase 8 | API layer (FastAPI routes, auth, async orchestration, HTTP smoke) | `716fde9` | Completed | [2026-04-09_phase-8_api-fastapi.md](./2026-04-09_phase-8_api-fastapi.md) |
 | 2026-04-09 | Phase 7 | AI Audit (CrewAI) sequential flow + cache/force + usage telemetry | `pending` | In progress | [2026-04-09_phase-7_audit-crewai.md](./2026-04-09_phase-7_audit-crewai.md) |
 | 2026-04-09 | Phase 6 | Knowledge Base (markdown indexing + PostgreSQL FTS lookup + cache) | `pending` | In progress | [2026-04-09_phase-6_knowledge-base.md](./2026-04-09_phase-6_knowledge-base.md) |

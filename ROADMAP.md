@@ -15,11 +15,11 @@ Status date: 2026-04-09
 | 6 | Knowledge base | Done | Markdown indexing + PostgreSQL FTS lookup + cache + CLI |
 | 7 | Audit layer | Done | CrewAI 3-agent sequential audit with cache/force and usage telemetry |
 | 8 | API layer | Done | FastAPI endpoints with auth, health, tasks, analysis, team, and debug routes |
-| 9 | Notifier | In progress | Telegram alerts by severity, resilient send path, and `notification_log` contract |
-| 10 | Ops layer | Planned | Healthcheck/sweepers/rollups and operational automation |
+| 9 | Notifier | Done | Telegram alerts by severity, resilient send path, and `notification_log` contract |
+| 10 | Ops layer | In progress | Healthcheck/sweepers/rollups and operational validation tooling |
 | 11 | Migration & cutover from v1 | Planned | Controlled parallel run and safe production switchover |
 | 12 | Hardening | Planned | Coverage, performance checks, operational hardening |
 
 ## Current focus
 
-Phase 9 notifier implementation and validation.
+Phase 10 operations implementation and validation.

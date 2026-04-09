@@ -247,6 +247,37 @@ LIMIT 50;
 "
 ```
 
+## Operations run (Phase 10)
+
+Healthcheck JSON + exit code mapping:
+
+```bash
+python scripts/run_healthcheck.py --unit-dir /etc/systemd/system
+echo $?
+```
+
+- `0` -> info
+- `1` -> data_warning
+- `2` -> infra_critical
+
+Stale sweeper:
+
+```bash
+python scripts/run_stale_sweeper.py --threshold-minutes 15
+```
+
+Cost rollup for one date:
+
+```bash
+python scripts/run_cost_rollup.py --date 2026-04-09
+```
+
+Verify systemd unit ExecStart paths:
+
+```bash
+python scripts/run_verify_units.py --unit-dir /etc/systemd/system
+```
+
 ## Server path conventions
 
 - v2: `/opt/WorkAI`

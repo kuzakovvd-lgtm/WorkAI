@@ -2,7 +2,7 @@
 
 Employee quality & audit system — v2 modular rewrite.
 
-**Status:** Phase 9 — Notifier layer.
+**Status:** Phase 10 — Operations layer.
 
 ## What it does
 
@@ -250,6 +250,30 @@ Severity routing (MVP):
 - `infra_critical` -> admin chat
 - `data_warning` -> management chat
 - `info` -> info chat if set, otherwise admin fallback
+
+## Operations (Phase 10)
+
+Ops layer adds reproducible maintenance routines and operational checks:
+
+- healthcheck with severity (`info`, `data_warning`, `infra_critical`)
+- stale sweeper for long-running `audit_runs`
+- daily cost rollup from `audit_runs.report_json._usage` into `audit_cost_daily`
+- systemd unit ExecStart path verification
+
+Run ops entrypoints:
+
+```bash
+python scripts/run_healthcheck.py --unit-dir /etc/systemd/system
+python scripts/run_stale_sweeper.py --threshold-minutes 15
+python scripts/run_cost_rollup.py --date 2026-04-09
+python scripts/run_verify_units.py --unit-dir /etc/systemd/system
+```
+
+`run_healthcheck.py` exit codes:
+
+- `0` -> info/ok
+- `1` -> data_warning
+- `2` -> infra_critical
 
 ## Project structure
 
