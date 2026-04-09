@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 from functools import lru_cache
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field, field_validator, model_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 from WorkAI import __version__
 
@@ -53,7 +53,7 @@ class GoogleSheetsSettings(BaseModel):
 
     enabled: bool = False
     spreadsheet_id: str | None = None
-    ranges: list[str] = Field(default_factory=list)
+    ranges: Annotated[list[str], NoDecode] = Field(default_factory=list)
     service_account_file: str | None = None
     service_account_json_b64: str | None = None
     read_only: bool = True
@@ -111,7 +111,9 @@ class ParseSettings(BaseModel):
     header_row_idx: int = 1
     employee_col_idx: int = 1
     max_cells_per_sheet: int = 20000
-    date_formats: list[str] = Field(default_factory=lambda: ["%Y-%m-%d", "%d.%m.%Y"])
+    date_formats: Annotated[list[str], NoDecode] = Field(
+        default_factory=lambda: ["%Y-%m-%d", "%d.%m.%Y"]
+    )
 
     @field_validator("date_formats", mode="before")
     @classmethod

@@ -57,6 +57,7 @@ def test_parse_smoke() -> None:
             conn.commit()
 
         run_parse()
+        init_db()
 
         with connection() as conn, conn.cursor() as cur:
             cur.execute(

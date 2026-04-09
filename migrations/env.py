@@ -11,6 +11,16 @@ from sqlalchemy.engine import Connection
 config = context.config
 
 
+def _normalize_sqlalchemy_dsn(dsn: str) -> str:
+    """Force SQLAlchemy to use psycopg3 driver for PostgreSQL URLs."""
+
+    if dsn.startswith("postgresql+psycopg://"):
+        return dsn
+    if dsn.startswith("postgresql://"):
+        return "postgresql+psycopg://" + dsn[len("postgresql://") :]
+    return dsn
+
+
 def _get_required_dsn() -> str:
     dsn = os.getenv("WORKAI_DB__DSN", "").strip()
     if not dsn:
@@ -18,7 +28,7 @@ def _get_required_dsn() -> str:
             "WORKAI_DB__DSN is required for migrations. "
             "Example: export WORKAI_DB__DSN=postgresql://user:pass@host:5432/dbname"
         )
-    return dsn
+    return _normalize_sqlalchemy_dsn(dsn)
 
 
 def _get_lock_timeout_ms() -> int:
@@ -53,10 +63,10 @@ def run_migrations_offline() -> None:
 
 def _run_online_with_connection(connection: Connection) -> None:
     lock_timeout_ms = _get_lock_timeout_ms()
-    connection.execute(text("SET lock_timeout = :lock_timeout"), {"lock_timeout": f"{lock_timeout_ms}ms"})
     context.configure(connection=connection, target_metadata=None)
 
     with context.begin_transaction():
+        connection.execute(text(f"SET lock_timeout = '{lock_timeout_ms}ms'"))
         context.run_migrations()
 
 

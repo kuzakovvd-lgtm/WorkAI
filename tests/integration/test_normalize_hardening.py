@@ -68,6 +68,7 @@ def test_normalize_writes_pipeline_error_on_record_failure(monkeypatch: pytest.M
 
         monkeypatch.setattr("WorkAI.normalize.runner.extract_time_info", _broken_extract_time_info)
         run_normalize()
+        init_db()
 
         with connection() as conn, conn.cursor() as cur:
             cur.execute(
@@ -111,6 +112,7 @@ def test_normalize_skips_sheet_date_when_lock_is_held() -> None:
                 cur.execute("SELECT pg_advisory_lock(hashtextextended(%s, 0))", (lock_key,))
 
             run_normalize()
+            init_db()
 
             with connection() as conn, conn.cursor() as cur:
                 cur.execute(

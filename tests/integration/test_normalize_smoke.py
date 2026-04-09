@@ -79,6 +79,7 @@ def test_normalize_smoke() -> None:
 
         run_normalize()
         run_normalize()
+        init_db()
 
         with connection() as conn, conn.cursor() as cur:
             cur.execute(
