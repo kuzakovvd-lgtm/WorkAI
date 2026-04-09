@@ -93,7 +93,16 @@ jobs:
           PY
 
       - name: Alembic upgrade head
-        run: alembic upgrade head
+        run: |
+          for attempt in 1 2 3 4 5; do
+            echo "alembic upgrade attempt ${attempt}"
+            if alembic upgrade head; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "alembic upgrade failed after retries"
+          exit 1
 
       - name: Alembic safety cycle (upgrade/downgrade/upgrade)
         run: |
