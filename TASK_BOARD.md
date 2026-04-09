@@ -11,21 +11,22 @@ Policy: every non-trivial iteration must update this board together with
 - [x] Phase 1 core infrastructure.
 - [x] Phase 2 ingest layer (`Google Sheets -> sheet_cells`).
 - [x] Phase 3 parse layer (`sheet_cells -> raw_tasks`).
+- [x] Phase 4 normalize layer (`raw_tasks -> tasks_normalized`).
+- [x] Phase 4.5 pre-flight hardening (CI postgres, DLQ, normalize single-flight lock).
 
 ## In progress
 
-- [ ] Phase 4 normalize layer design and `tasks_normalized` contract.
+- [ ] Phase 5 assess layer design and `daily_task_assessments` contract.
 
 ## Next
 
-- [ ] Define `tasks_normalized` schema and migration(s) for normalize layer.
-- [ ] Implement normalize module entrypoint(s) in `scripts/`.
-- [ ] Add normalize unit/integration tests.
-- [ ] Extend runbook with normalize operational checks.
+- [ ] Define `daily_task_assessments` schema and migration(s) for assess layer.
+- [ ] Implement assess module entrypoint(s) in `scripts/`.
+- [ ] Add assess unit/integration tests.
+- [ ] Extend runbook with assess operational checks.
 
 ## Backlog
 
-- [ ] Normalize layer (Phase 4).
 - [ ] Assess layer (Phase 5).
 - [ ] Knowledge base (Phase 6).
 - [ ] Audit orchestration (Phase 7).

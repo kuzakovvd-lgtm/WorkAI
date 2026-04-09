@@ -2,7 +2,7 @@
 
 Employee quality & audit system — v2 modular rewrite.
 
-**Status:** Phase 3 — Parse layer.
+**Status:** Phase 4 — Normalize layer.
 
 ## What it does
 
@@ -115,6 +115,44 @@ python scripts/workai_parse.py run
 - `WORKAI_PARSE__HEADER_ROW_IDX=1`
 - `WORKAI_PARSE__EMPLOYEE_COL_IDX=1`
 - `WORKAI_PARSE__DATE_FORMATS=%Y-%m-%d,%d.%m.%Y`
+
+## Normalize (Phase 4)
+
+Normalize слой детерминированно преобразует `raw_tasks` в `tasks_normalized`.
+
+- Источник архитектурного контракта: `ARCHITECTURE.md` (`normalize -> tasks_normalized`).
+- TODO(TZ §5): сверить расширенный normalize-контракт с полным внешним ТЗ.
+
+Запуск normalize вручную:
+
+```bash
+python scripts/workai_normalize.py run
+```
+
+Минимальные переменные:
+
+- `WORKAI_NORMALIZE__ENABLED=true`
+- `WORKAI_GSHEETS__SPREADSHEET_ID=<spreadsheet-id>`
+
+Опциональные переменные:
+
+- `WORKAI_NORMALIZE__EMPLOYEE_ALIASES_FILE=/path/to/employee-aliases.csv`
+- `WORKAI_NORMALIZE__FUZZY_ENABLED=false|true`
+- `WORKAI_NORMALIZE__FUZZY_THRESHOLD=90`
+- `WORKAI_NORMALIZE__TIME_PARSE_ENABLED=true|false`
+- `WORKAI_NORMALIZE__CATEGORY_RULES_FILE=/path/to/category-rules.json`
+- `WORKAI_NORMALIZE__MAX_ERRORS_PER_SHEET=50`
+
+## Pre-flight hardening (Phase 4.5)
+
+- Integration CI now includes ephemeral PostgreSQL job (`pytest -m integration`).
+- Normalize writes record-level failures to `pipeline_errors`.
+- Normalize full-refresh runs with advisory lock single-flight per `(spreadsheet_id, sheet_title, work_date)`.
+- Assess-like query plan baseline can be generated via:
+
+```bash
+python scripts/workai_explain_assess.py --date 2026-04-07
+```
 
 ## Project structure
 

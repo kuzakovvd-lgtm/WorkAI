@@ -142,6 +142,42 @@ class ParseSettings(BaseModel):
         return self
 
 
+class NormalizeSettings(BaseModel):
+    """Normalize layer runtime settings."""
+
+    enabled: bool = False
+    employee_aliases_file: str | None = None
+    fuzzy_enabled: bool = False
+    fuzzy_threshold: int = 90
+    time_parse_enabled: bool = True
+    category_rules_file: str | None = None
+    max_rows_per_sheet: int = 200000
+    max_errors_per_sheet: int = 50
+
+    @model_validator(mode="after")
+    def validate_when_enabled(self) -> NormalizeSettings:
+        """Validate normalize settings only for active normalize runs."""
+
+        if not self.enabled:
+            return self
+
+        if self.fuzzy_threshold < 0 or self.fuzzy_threshold > 100:
+            raise ValueError("WORKAI_NORMALIZE__FUZZY_THRESHOLD must be in range [0, 100]")
+
+        if self.max_rows_per_sheet <= 0:
+            raise ValueError("WORKAI_NORMALIZE__MAX_ROWS_PER_SHEET must be > 0")
+        if self.max_errors_per_sheet <= 0:
+            raise ValueError("WORKAI_NORMALIZE__MAX_ERRORS_PER_SHEET must be > 0")
+
+        if self.employee_aliases_file is not None and self.employee_aliases_file.strip() == "":
+            raise ValueError("WORKAI_NORMALIZE__EMPLOYEE_ALIASES_FILE must not be empty when set")
+
+        if self.category_rules_file is not None and self.category_rules_file.strip() == "":
+            raise ValueError("WORKAI_NORMALIZE__CATEGORY_RULES_FILE must not be empty when set")
+
+        return self
+
+
 class Settings(BaseSettings):
     """Root settings object for the service."""
 
@@ -158,6 +194,7 @@ class Settings(BaseSettings):
     db: DatabaseSettings = Field(default_factory=DatabaseSettings)
     gsheets: GoogleSheetsSettings = Field(default_factory=GoogleSheetsSettings)
     parse: ParseSettings = Field(default_factory=ParseSettings)
+    normalize: NormalizeSettings = Field(default_factory=NormalizeSettings)
 
     @model_validator(mode="after")
     def sync_root_env_to_app(self) -> Settings:

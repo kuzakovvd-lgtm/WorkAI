@@ -81,3 +81,48 @@ def test_parse_enabled_invalid_values_raise(monkeypatch: pytest.MonkeyPatch) -> 
     get_settings.cache_clear()
     with pytest.raises(ValueError, match="WORKAI_PARSE__HEADER_ROW_IDX"):
         get_settings()
+
+
+def test_normalize_disabled_no_extra_requirements(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("WORKAI_NORMALIZE__ENABLED", "false")
+    monkeypatch.delenv("WORKAI_NORMALIZE__EMPLOYEE_ALIASES_FILE", raising=False)
+    monkeypatch.delenv("WORKAI_NORMALIZE__CATEGORY_RULES_FILE", raising=False)
+
+    get_settings.cache_clear()
+    settings = get_settings()
+
+    assert settings.normalize.enabled is False
+
+
+def test_normalize_aliases_path_is_accepted(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("WORKAI_NORMALIZE__ENABLED", "true")
+    monkeypatch.setenv("WORKAI_NORMALIZE__EMPLOYEE_ALIASES_FILE", "/tmp/aliases.csv")
+    monkeypatch.setenv("WORKAI_NORMALIZE__FUZZY_THRESHOLD", "90")
+    monkeypatch.setenv("WORKAI_NORMALIZE__MAX_ROWS_PER_SHEET", "1000")
+
+    get_settings.cache_clear()
+    settings = get_settings()
+
+    assert settings.normalize.enabled is True
+    assert settings.normalize.employee_aliases_file == "/tmp/aliases.csv"
+
+
+def test_normalize_invalid_fuzzy_threshold_raises(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("WORKAI_NORMALIZE__ENABLED", "true")
+    monkeypatch.setenv("WORKAI_NORMALIZE__FUZZY_THRESHOLD", "101")
+    monkeypatch.setenv("WORKAI_NORMALIZE__MAX_ROWS_PER_SHEET", "1000")
+
+    get_settings.cache_clear()
+    with pytest.raises(ValueError, match="WORKAI_NORMALIZE__FUZZY_THRESHOLD"):
+        get_settings()
+
+
+def test_normalize_invalid_max_errors_raises(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("WORKAI_NORMALIZE__ENABLED", "true")
+    monkeypatch.setenv("WORKAI_NORMALIZE__FUZZY_THRESHOLD", "90")
+    monkeypatch.setenv("WORKAI_NORMALIZE__MAX_ROWS_PER_SHEET", "1000")
+    monkeypatch.setenv("WORKAI_NORMALIZE__MAX_ERRORS_PER_SHEET", "0")
+
+    get_settings.cache_clear()
+    with pytest.raises(ValueError, match="WORKAI_NORMALIZE__MAX_ERRORS_PER_SHEET"):
+        get_settings()

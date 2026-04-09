@@ -14,6 +14,8 @@ Format rules:
 
 | Date | Iteration | Scope | Commit | Status | Log |
 |---|---|---|---|---|---|
+| 2026-04-09 | Phase 4.5 | Pre-flight hardening (CI postgres + DLQ + normalize lock) | `pending` | Completed | [2026-04-09_phase-4.5_hardening.md](./2026-04-09_phase-4.5_hardening.md) |
+| 2026-04-08 | Phase 4 | Normalize layer (raw_tasks -> tasks_normalized) | `pending` | Completed | [2026-04-08_phase-4_normalize.md](./2026-04-08_phase-4_normalize.md) |
 | 2026-04-08 | Phase 3 | Parse layer (sheet_cells -> raw_tasks) | `e0a33bf` | Completed | [2026-04-08_phase-3_parse.md](./2026-04-08_phase-3_parse.md) |
 | 2026-04-08 | Phase 2 | Ingest layer (Google Sheets -> sheet_cells) | `ea4c926` | Completed | [2026-04-08_phase-2_ingest-sheet-cells.md](./2026-04-08_phase-2_ingest-sheet-cells.md) |
 | 2026-04-08 | Phase 1 | Core infrastructure (config/common/db/alembic baseline) | `566fe8d` | Completed | [2026-04-08_phase-1_core-infrastructure.md](./2026-04-08_phase-1_core-infrastructure.md) |

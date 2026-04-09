@@ -4,6 +4,7 @@ import pytest
 from WorkAI.db import close_db, connection, init_db
 
 
+@pytest.mark.integration
 def test_db_connectivity() -> None:
     dsn = os.getenv("WORKAI_DB__DSN", "").strip()
     if not dsn:

@@ -10,6 +10,7 @@ from WorkAI.db import close_db, connection, init_db
 from WorkAI.parse import run_parse
 
 
+@pytest.mark.integration
 def test_parse_smoke() -> None:
     dsn = os.getenv("WORKAI_DB__DSN", "").strip()
     if not dsn:

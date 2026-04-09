@@ -7,6 +7,7 @@ from WorkAI.db import close_db, connection
 from WorkAI.ingest.runner import run_ingest
 
 
+@pytest.mark.integration_online
 def test_ingest_smoke() -> None:
     has_dsn = bool(os.getenv("WORKAI_DB__DSN", "").strip())
     has_spreadsheet = bool(os.getenv("WORKAI_GSHEETS__SPREADSHEET_ID", "").strip())

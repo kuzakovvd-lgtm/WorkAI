@@ -92,6 +92,10 @@ addopts = [
     "--strict-config",
     "-ra",
 ]
+markers = [
+    "integration: tests requiring real PostgreSQL integration environment",
+    "integration_online: tests requiring external online dependencies (e.g. Google API)",
+]
 
 [tool.coverage.run]
 source = ["WorkAI"]

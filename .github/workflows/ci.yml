@@ -33,3 +33,72 @@ jobs:
 
       - name: Pytest
         run: pytest
+
+  integration-postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      WORKAI_DB__DSN: postgresql+psycopg://postgres:postgres@localhost:5432/postgres
+      WORKAI_ENV: dev
+      WORKAI_LOG__LEVEL: INFO
+      WORKAI_LOG__JSON: false
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Wait for PostgreSQL
+        run: |
+          python - <<'PY'
+          import time
+          import psycopg
+
+          dsn = "postgresql+psycopg://postgres:postgres@localhost:5432/postgres"
+          for attempt in range(30):
+            try:
+              with psycopg.connect(dsn.replace("+psycopg", "")) as conn:
+                with conn.cursor() as cur:
+                  cur.execute("SELECT 1")
+                  cur.fetchone()
+              print("postgres is ready")
+              break
+            except Exception:
+              if attempt == 29:
+                raise
+              time.sleep(1)
+          PY
+
+      - name: Alembic upgrade head
+        run: alembic upgrade head
+
+      - name: Alembic safety cycle (upgrade/downgrade/upgrade)
+        run: |
+          alembic downgrade -1
+          alembic upgrade head
+
+      - name: Integration tests (PostgreSQL)
+        run: pytest -q -m integration

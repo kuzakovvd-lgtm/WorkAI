@@ -16,6 +16,14 @@ _POOL: ConnectionPool[Connection[Any]] | None = None
 _LOG = get_logger(__name__)
 
 
+def _normalize_conninfo(dsn: str) -> str:
+    """Convert SQLAlchemy-style psycopg URL to psycopg conninfo URL when needed."""
+
+    if dsn.startswith("postgresql+psycopg://"):
+        return dsn.replace("postgresql+psycopg://", "postgresql://", 1)
+    return dsn
+
+
 def _build_reconnect_failed_callback(
     settings: Settings,
 ) -> Callable[[ConnectionPool[Connection[Any]]], None]:
@@ -42,7 +50,7 @@ def init_db(settings: Settings | None = None) -> None:
     resolved = settings or get_settings()
 
     try:
-        dsn = resolved.db.require_dsn()
+        dsn = _normalize_conninfo(resolved.db.require_dsn())
     except ValueError as exc:
         raise ConfigError(str(exc)) from exc
 
