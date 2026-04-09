@@ -90,7 +90,7 @@ def test_normalize_smoke() -> None:
                     max(duration_minutes),
                     min(employee_id),
                     max(raw_task_id),
-                    bool_and(time_source IN ('none', 'parsed')),
+                    bool_and(time_source IN ('none', 'logged')),
                     bool_and(result_confirmed = true)
                 FROM tasks_normalized
                 WHERE spreadsheet_id = %s

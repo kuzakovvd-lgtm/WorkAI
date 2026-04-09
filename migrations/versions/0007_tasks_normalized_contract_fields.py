@@ -63,7 +63,7 @@ def upgrade() -> None:
             task_date = tn.work_date,
             canonical_text = tn.task_text_norm,
             task_category = tn.category_code,
-            time_source = CASE WHEN tn.duration_minutes IS NULL THEN 'none' ELSE 'parsed' END,
+            time_source = CASE WHEN tn.duration_minutes IS NULL THEN 'none' ELSE 'logged' END,
             result_confirmed = CASE WHEN tn.duration_minutes IS NULL THEN false ELSE true END,
             is_micro = CASE WHEN tn.duration_minutes IS NOT NULL AND tn.duration_minutes <= 15 THEN true ELSE false END,
             is_smart = false,

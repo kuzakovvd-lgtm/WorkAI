@@ -10,3 +10,14 @@ def test_assess_queries_use_contract_columns_not_hash_derivation() -> None:
 
     assert "time_source = 'none'" in queries.FETCH_DAY_METRICS_SQL
     assert "result_confirmed = false" in queries.FETCH_DAY_METRICS_SQL
+
+
+def test_scoring_queries_use_contract_task_fields_only() -> None:
+    assert "employee_name_norm" not in queries.FETCH_SCORING_TASKS_BY_DATE_SQL
+    assert "task_text_norm" not in queries.FETCH_SCORING_TASKS_BY_DATE_SQL
+    assert "hashtextextended" not in queries.FETCH_SCORING_TASKS_BY_DATE_SQL
+
+    assert "id" in queries.FETCH_SCORING_TASKS_BY_DATE_SQL
+    assert "time_source" in queries.FETCH_SCORING_TASKS_BY_DATE_SQL
+    assert "result_confirmed" in queries.FETCH_SCORING_TASKS_BY_DATE_SQL
+    assert "is_smart" in queries.FETCH_SCORING_TASKS_BY_DATE_SQL

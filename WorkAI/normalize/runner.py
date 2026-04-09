@@ -263,7 +263,7 @@ def _normalize_sheet_rows(
                     duration_minutes=None if time_info is None else time_info.duration_minutes,
                     time_source="none"
                     if time_info is None or time_info.duration_minutes is None
-                    else "parsed",
+                    else "logged",
                     is_smart=_is_smart_task(cleaned_text),
                     is_micro=_is_micro_task(
                         None if time_info is None else time_info.duration_minutes

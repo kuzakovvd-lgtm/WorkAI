@@ -1,4 +1,4 @@
-"""SQL helpers for assess ghost-time step."""
+"""SQL helpers for assess ghost-time and scoring steps."""
 
 from __future__ import annotations
 
@@ -8,7 +8,13 @@ from typing import Any, cast
 
 from psycopg import Cursor
 
-from WorkAI.assess.models import EmployeeDailyGhostTimeRow, EmployeeDayKey, EmployeeDayMetrics
+from WorkAI.assess.models import (
+    DailyTaskAssessmentRow,
+    EmployeeDailyGhostTimeRow,
+    EmployeeDayKey,
+    EmployeeDayMetrics,
+    NormalizedTaskForScoring,
+)
 
 LIST_EMPLOYEE_DAY_KEYS_SQL = """
 SELECT DISTINCT
@@ -48,6 +54,62 @@ DO UPDATE SET
     ghost_minutes = EXCLUDED.ghost_minutes,
     index_of_trust_base = EXCLUDED.index_of_trust_base,
     computed_at = now()
+"""
+
+FETCH_SCORING_TASKS_BY_DATE_SQL = """
+SELECT
+    id,
+    employee_id,
+    task_date,
+    duration_minutes,
+    time_source,
+    is_smart,
+    is_micro,
+    result_confirmed,
+    is_zhdun
+FROM tasks_normalized
+WHERE task_date = %s
+ORDER BY employee_id, id
+"""
+
+FETCH_SCORING_TASKS_BY_EMPLOYEE_DAY_SQL = """
+SELECT
+    id,
+    employee_id,
+    task_date,
+    duration_minutes,
+    time_source,
+    is_smart,
+    is_micro,
+    result_confirmed,
+    is_zhdun
+FROM tasks_normalized
+WHERE employee_id = %s
+  AND task_date = %s
+ORDER BY id
+"""
+
+UPSERT_DAILY_TASK_ASSESSMENT_SQL = """
+INSERT INTO daily_task_assessments (
+    normalized_task_id,
+    employee_id,
+    task_date,
+    norm_minutes,
+    delta_minutes,
+    quality_score,
+    smart_score,
+    assessed_at
+)
+VALUES (%s, %s, %s, %s, %s, %s, %s, now())
+ON CONFLICT (normalized_task_id)
+DO UPDATE SET
+    employee_id = EXCLUDED.employee_id,
+    task_date = EXCLUDED.task_date,
+    norm_minutes = EXCLUDED.norm_minutes,
+    delta_minutes = EXCLUDED.delta_minutes,
+    quality_score = EXCLUDED.quality_score,
+    smart_score = EXCLUDED.smart_score,
+    assessed_at = now()
 """
 
 
@@ -120,4 +182,81 @@ def upsert_employee_daily_ghost_time_batch(
             )
             for row in rows
         ],
+    )
+
+
+def fetch_scoring_tasks_by_date(cur: Cursor[object], target_date: date) -> list[NormalizedTaskForScoring]:
+    """Return tasks_normalized rows for task-level scoring at specific date."""
+
+    cur.execute(FETCH_SCORING_TASKS_BY_DATE_SQL, (target_date,))
+    rows = cast(list[tuple[Any, ...]], cur.fetchall())
+    return [_row_to_scoring_task(row) for row in rows]
+
+
+def fetch_scoring_tasks_by_employee_day(
+    cur: Cursor[object],
+    employee_id: int,
+    target_date: date,
+) -> list[NormalizedTaskForScoring]:
+    """Return scoring tasks for one employee/day partition."""
+
+    cur.execute(FETCH_SCORING_TASKS_BY_EMPLOYEE_DAY_SQL, (employee_id, target_date))
+    rows = cast(list[tuple[Any, ...]], cur.fetchall())
+    return [_row_to_scoring_task(row) for row in rows]
+
+
+def upsert_daily_task_assessment(cur: Cursor[object], row: DailyTaskAssessmentRow) -> None:
+    """Upsert one daily_task_assessments row."""
+
+    cur.execute(
+        UPSERT_DAILY_TASK_ASSESSMENT_SQL,
+        (
+            row.normalized_task_id,
+            row.employee_id,
+            row.task_date,
+            row.norm_minutes,
+            row.delta_minutes,
+            row.quality_score,
+            row.smart_score,
+        ),
+    )
+
+
+def upsert_daily_task_assessments_batch(
+    cur: Cursor[object],
+    rows: Sequence[DailyTaskAssessmentRow],
+) -> None:
+    """Batch UPSERT task scoring rows by normalized_task_id."""
+
+    if not rows:
+        return
+
+    cur.executemany(
+        UPSERT_DAILY_TASK_ASSESSMENT_SQL,
+        [
+            (
+                row.normalized_task_id,
+                row.employee_id,
+                row.task_date,
+                row.norm_minutes,
+                row.delta_minutes,
+                row.quality_score,
+                row.smart_score,
+            )
+            for row in rows
+        ],
+    )
+
+
+def _row_to_scoring_task(row: tuple[Any, ...]) -> NormalizedTaskForScoring:
+    return NormalizedTaskForScoring(
+        normalized_task_id=int(row[0]),
+        employee_id=int(row[1]),
+        task_date=cast(date, row[2]),
+        duration_minutes=None if row[3] is None else int(row[3]),
+        time_source=str(row[4]),
+        is_smart=bool(row[5]),
+        is_micro=bool(row[6]),
+        result_confirmed=bool(row[7]),
+        is_zhdun=bool(row[8]),
     )

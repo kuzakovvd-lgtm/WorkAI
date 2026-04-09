@@ -1,4 +1,4 @@
-"""Assess runner for Phase 5 Step 1: ghost time + base trust."""
+"""Assess runner for Phase 5 Step 1+2: ghost time and task scoring."""
 
 from __future__ import annotations
 
@@ -6,12 +6,21 @@ from datetime import date
 from decimal import ROUND_HALF_UP, Decimal
 
 from WorkAI.assess.ghost_time import calculate_ghost_minutes, calculate_index_of_trust_base
-from WorkAI.assess.models import AssessGhostTimeResult, EmployeeDailyGhostTimeRow
+from WorkAI.assess.models import (
+    AssessGhostTimeResult,
+    AssessRunResult,
+    AssessScoringResult,
+    DailyTaskAssessmentRow,
+    EmployeeDailyGhostTimeRow,
+)
 from WorkAI.assess.queries import (
     fetch_employee_day_metrics,
+    fetch_scoring_tasks_by_date,
     list_employee_day_keys,
+    upsert_daily_task_assessments_batch,
     upsert_employee_daily_ghost_time_batch,
 )
+from WorkAI.assess.scoring import compute_quality_score, compute_smart_score
 from WorkAI.common import configure_logging, get_logger
 from WorkAI.config import Settings, get_settings
 from WorkAI.db import close_db, connection, init_db
@@ -19,7 +28,7 @@ from WorkAI.db import close_db, connection, init_db
 _LOG = get_logger(__name__)
 
 
-def _quantize_trust(value: float) -> Decimal:
+def _quantize_score(value: float) -> Decimal:
     return Decimal(str(value)).quantize(Decimal("0.001"), rounding=ROUND_HALF_UP)
 
 
@@ -53,7 +62,7 @@ def run_assess_ghost_time(target_date: date, settings: Settings | None = None) -
                             workday_minutes=480,
                             logged_minutes=metrics.logged_minutes,
                             ghost_minutes=ghost_minutes,
-                            index_of_trust_base=_quantize_trust(trust_base),
+                            index_of_trust_base=_quantize_score(trust_base),
                         )
                     )
 
@@ -72,5 +81,74 @@ def run_assess_ghost_time(target_date: date, settings: Settings | None = None) -
         target_date=target_date.isoformat(),
         employees_processed=result.employees_processed,
         rows_upserted=result.rows_upserted,
+    )
+    return result
+
+
+def run_assess_scoring(target_date: date, settings: Settings | None = None) -> AssessScoringResult:
+    """Run task-level scoring step for a specific date."""
+
+    resolved = settings or get_settings()
+    configure_logging(resolved)
+    init_db(resolved)
+
+    rows_to_upsert: list[DailyTaskAssessmentRow] = []
+    employees_seen: set[int] = set()
+
+    try:
+        with connection() as conn:
+            with conn.cursor() as cur:
+                tasks = fetch_scoring_tasks_by_date(cur, target_date)
+
+                for task in tasks:
+                    employees_seen.add(task.employee_id)
+                    rows_to_upsert.append(
+                        DailyTaskAssessmentRow(
+                            normalized_task_id=task.normalized_task_id,
+                            employee_id=task.employee_id,
+                            task_date=task.task_date,
+                            norm_minutes=None,
+                            delta_minutes=None,
+                            quality_score=_quantize_score(compute_quality_score(task)),
+                            smart_score=_quantize_score(compute_smart_score(task)),
+                        )
+                    )
+
+                upsert_daily_task_assessments_batch(cur, rows_to_upsert)
+            conn.commit()
+    finally:
+        close_db()
+
+    result = AssessScoringResult(
+        target_date=target_date,
+        tasks_scored=len(rows_to_upsert),
+        rows_upserted=len(rows_to_upsert),
+        employees_seen=len(employees_seen),
+    )
+    _LOG.info(
+        "assess_scoring_completed",
+        target_date=target_date.isoformat(),
+        tasks_scored=result.tasks_scored,
+        rows_upserted=result.rows_upserted,
+        employees_seen=result.employees_seen,
+    )
+    return result
+
+
+def run_assess(target_date: date, settings: Settings | None = None) -> AssessRunResult:
+    """Run assess step1+step2 for a specific date in sequence."""
+
+    resolved = settings or get_settings()
+    configure_logging(resolved)
+
+    ghost = run_assess_ghost_time(target_date, settings=resolved)
+    scoring = run_assess_scoring(target_date, settings=resolved)
+
+    result = AssessRunResult(target_date=target_date, ghost_time=ghost, scoring=scoring)
+    _LOG.info(
+        "assess_run_completed",
+        target_date=target_date.isoformat(),
+        ghost_rows_upserted=ghost.rows_upserted,
+        scoring_rows_upserted=scoring.rows_upserted,
     )
     return result
