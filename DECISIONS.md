@@ -97,3 +97,11 @@ This file stores short ADR-style entries.
 - Context: Step 3 aggregation must provide deterministic and re-readable output for future audit layer; runtime-only aggregation is not a stable cross-module contract.
 - Decision: Persist aggregation result in dedicated table `operational_cycles` with unique key `(employee_id, task_date, cycle_key)`.
 - Consequences: Audit and downstream consumers can read stable aggregated cycles from DB; aggregation runner uses deterministic cycle keys and per employee/day refresh semantics to avoid stale rows.
+
+## ADR-0013: Bayesian dynamic norms use centralized MVP baseline priors
+
+- Status: Accepted
+- Date: 2026-04-09
+- Context: Product baseline prior catalog is not yet fully transferred into repository, but Step 4 requires deterministic priors for Bayesian update.
+- Decision: Store temporary baseline priors in `WorkAI.assess.bayesian_norms.BASELINE_PRIORS_MINUTES` as a centralized replaceable mapping.
+- Consequences: Bayesian updates are deterministic and transparent now; priors can be swapped later without changing DB contract or runner API.

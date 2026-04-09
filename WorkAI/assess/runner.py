@@ -1,4 +1,4 @@
-"""Assess runner for Phase 5 Step 1/2/3: ghost time, scoring, aggregation."""
+"""Assess runner for Phase 5 Step 1/2/3/4: ghost time, scoring, aggregation, norms."""
 
 from __future__ import annotations
 
@@ -7,9 +7,11 @@ from datetime import date
 from decimal import ROUND_HALF_UP, Decimal
 
 from WorkAI.assess.aggregation import aggregate_operational_cycles
+from WorkAI.assess.bayesian_norms import compute_norm_rows, resolve_window_bounds
 from WorkAI.assess.ghost_time import calculate_ghost_minutes, calculate_index_of_trust_base
 from WorkAI.assess.models import (
     AssessAggregationResult,
+    AssessBayesianNormsResult,
     AssessGhostTimeResult,
     AssessmentTaskForAggregation,
     AssessRunResult,
@@ -23,8 +25,12 @@ from WorkAI.assess.queries import (
     fetch_aggregation_input_by_date,
     fetch_employee_day_metrics,
     fetch_scoring_tasks_by_date,
+    fetch_window_category_stats,
     list_employee_day_keys,
+    recompute_assessment_norms_for_date,
+    recompute_assessment_norms_for_window,
     upsert_daily_task_assessments_batch,
+    upsert_dynamic_task_norms_batch,
     upsert_employee_daily_ghost_time_batch,
     upsert_operational_cycles_batch,
 )
@@ -211,8 +217,57 @@ def run_assess_aggregation(target_date: date, settings: Settings | None = None) 
     return result
 
 
+def run_assess_bayesian_norms(
+    target_date: date | None = None,
+    window_days: int = 7,
+    settings: Settings | None = None,
+) -> AssessBayesianNormsResult:
+    """Update dynamic_task_norms and recompute assessment norm/delta fields."""
+
+    resolved = settings or get_settings()
+    configure_logging(resolved)
+    init_db(resolved)
+
+    anchor_date = target_date or date.today()
+    window_start, window_end = resolve_window_bounds(anchor_date, window_days)
+
+    categories_updated = 0
+    rows_recomputed = 0
+
+    try:
+        with connection() as conn:
+            with conn.cursor() as cur:
+                stats = fetch_window_category_stats(cur, window_start, window_end)
+                norm_rows = compute_norm_rows(stats=stats)
+                upsert_dynamic_task_norms_batch(cur, norm_rows)
+                categories_updated = len(norm_rows)
+
+                if target_date is None:
+                    rows_recomputed = recompute_assessment_norms_for_window(cur, window_start, window_end)
+                else:
+                    rows_recomputed = recompute_assessment_norms_for_date(cur, target_date)
+            conn.commit()
+    finally:
+        close_db()
+
+    result = AssessBayesianNormsResult(
+        target_date=anchor_date,
+        window_days=max(1, window_days),
+        categories_updated=categories_updated,
+        rows_recomputed=rows_recomputed,
+    )
+    _LOG.info(
+        "assess_bayesian_norms_completed",
+        target_date=result.target_date.isoformat(),
+        window_days=result.window_days,
+        categories_updated=result.categories_updated,
+        rows_recomputed=result.rows_recomputed,
+    )
+    return result
+
+
 def run_assess(target_date: date, settings: Settings | None = None) -> AssessRunResult:
-    """Run assess step1+step2+step3 for a specific date in sequence."""
+    """Run assess step1+step2+step3+step4 for a specific date in sequence."""
 
     resolved = settings or get_settings()
     configure_logging(resolved)
@@ -220,12 +275,14 @@ def run_assess(target_date: date, settings: Settings | None = None) -> AssessRun
     ghost = run_assess_ghost_time(target_date, settings=resolved)
     scoring = run_assess_scoring(target_date, settings=resolved)
     aggregation = run_assess_aggregation(target_date, settings=resolved)
+    bayesian_norms = run_assess_bayesian_norms(target_date, window_days=7, settings=resolved)
 
     result = AssessRunResult(
         target_date=target_date,
         ghost_time=ghost,
         scoring=scoring,
         aggregation=aggregation,
+        bayesian_norms=bayesian_norms,
     )
     _LOG.info(
         "assess_run_completed",
@@ -233,5 +290,6 @@ def run_assess(target_date: date, settings: Settings | None = None) -> AssessRun
         ghost_rows_upserted=ghost.rows_upserted,
         scoring_rows_upserted=scoring.rows_upserted,
         aggregation_cycles_written=aggregation.cycles_written,
+        bayesian_rows_recomputed=bayesian_norms.rows_recomputed,
     )
     return result

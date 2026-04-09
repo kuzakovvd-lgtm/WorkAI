@@ -10,9 +10,9 @@ Database schema is the formal contract between modules.
 - All modules may depend on `db`, `config`, `common`.
 - Reverse/circular imports across domain modules are forbidden.
 
-## Current contract state (Phase 2/3/4.5/5.3)
+## Current contract state (Phase 2/3/4.5/5.4)
 
-- Alembic chain: `0001_baseline` -> `0002_sheet_cells` -> `0003_raw_tasks` -> `0004_tasks_normalized` -> `0005_pipeline_errors` -> `0006_employee_daily_ghost_time` -> `0007_tasks_norm_contract` -> `0008_daily_task_assess` -> `0009_tasks_norm_time_source` -> `0010_operational_cycles`.
+- Alembic chain: `0001_baseline` -> `0002_sheet_cells` -> `0003_raw_tasks` -> `0004_tasks_normalized` -> `0005_pipeline_errors` -> `0006_employee_daily_ghost_time` -> `0007_tasks_norm_contract` -> `0008_daily_task_assess` -> `0009_tasks_norm_time_source` -> `0010_operational_cycles` -> `0011_dynamic_task_norms`.
 - Runtime DB access goes through `WorkAI.db` helpers and explicit `init_db()`.
 
 ### `sheet_cells` (ingest -> parse contract)
@@ -87,6 +87,7 @@ Database schema is the formal contract between modules.
   - `(employee_id, task_date)` for day-level rollups and Step 3 joins.
 - Idempotency expectation:
   - assess Step 2 uses UPSERT on `normalized_task_id`; reruns update row scores in place.
+  - assess Step 4 recomputes `norm_minutes` and `delta_minutes` in place without duplicating rows.
 
 ### `operational_cycles` (assess Step 3 output, assess -> audit contract)
 
@@ -101,6 +102,15 @@ Database schema is the formal contract between modules.
   - `(task_date)` for day-wide operational/audit prefetch.
 - Idempotency expectation:
   - assess Step 3 rebuilds cycles per `(employee_id, task_date)` partition and writes deterministic keys; reruns on the same snapshot produce the same cycle keys and metrics.
+
+### `dynamic_task_norms` (assess Step 4 output)
+
+- Purpose: persistent Bayesian-updated duration norms by task category.
+- Primary key: `task_category`.
+- Core payload:
+  - `norm_minutes`, `stddev_minutes`, `sample_size`, `baseline_prior`, `last_updated_at`.
+- Idempotency expectation:
+  - assess Step 4 uses UPSERT by `task_category`; reruns update norm statistics in place.
 
 ### `pipeline_errors` (cross-phase DLQ-style error contract)
 

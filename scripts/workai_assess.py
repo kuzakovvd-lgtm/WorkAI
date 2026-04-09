@@ -25,7 +25,7 @@ def _build_parser() -> argparse.ArgumentParser:
 
     run_parser = subparsers.add_parser(
         "run",
-        help="Run assess step1(ghost_time) + step2(scoring) + step3(aggregation)",
+        help="Run assess step1(ghost_time) + step2(scoring) + step3(aggregation) + step4(bayesian_norms)",
     )
     run_parser.add_argument("--date", dest="target_date", required=True, type=_parse_date)
 
@@ -38,6 +38,10 @@ def _build_parser() -> argparse.ArgumentParser:
     aggregation_parser = subparsers.add_parser("run-aggregation", help="Run only assess step3 aggregation")
     aggregation_parser.add_argument("--date", dest="target_date", required=True, type=_parse_date)
 
+    bayes_parser = subparsers.add_parser("run-bayesian-norms", help="Run only assess step4 bayesian norms")
+    bayes_parser.add_argument("--date", dest="target_date", required=True, type=_parse_date)
+    bayes_parser.add_argument("--window-days", dest="window_days", type=int, default=7)
+
     return parser
 
 
@@ -45,6 +49,7 @@ def main() -> int:
     from WorkAI.assess import (
         run_assess,
         run_assess_aggregation,
+        run_assess_bayesian_norms,
         run_assess_ghost_time,
         run_assess_scoring,
     )
@@ -63,6 +68,7 @@ def main() -> int:
                 ghost_rows_upserted=result.ghost_time.rows_upserted,
                 scoring_rows_upserted=result.scoring.rows_upserted,
                 aggregation_cycles_written=result.aggregation.cycles_written,
+                bayesian_rows_recomputed=result.bayesian_norms.rows_recomputed,
             )
             return 0
 
@@ -90,6 +96,17 @@ def main() -> int:
                 "assess_cli_aggregation_done",
                 target_date=result.target_date.isoformat(),
                 cycles_written=result.cycles_written,
+            )
+            return 0
+
+        if args.command == "run-bayesian-norms":
+            result = run_assess_bayesian_norms(args.target_date, window_days=args.window_days)
+            logger.info(
+                "assess_cli_bayesian_norms_done",
+                target_date=result.target_date.isoformat(),
+                window_days=result.window_days,
+                categories_updated=result.categories_updated,
+                rows_recomputed=result.rows_recomputed,
             )
             return 0
     except Exception:

@@ -132,10 +132,42 @@ class AssessAggregationResult:
 
 
 @dataclass(frozen=True)
+class TaskCategoryWindowStats:
+    """Observed duration stats for one task category in rolling window."""
+
+    task_category: str
+    sample_size: int
+    sample_mean: Decimal | None
+    sample_stddev_minutes: Decimal | None
+
+
+@dataclass(frozen=True)
+class DynamicTaskNormRow:
+    """Row payload for dynamic_task_norms upsert."""
+
+    task_category: str
+    norm_minutes: Decimal
+    stddev_minutes: Decimal | None
+    sample_size: int
+    baseline_prior: Decimal | None
+
+
+@dataclass(frozen=True)
+class AssessBayesianNormsResult:
+    """Runner summary for Bayesian dynamic norms execution."""
+
+    target_date: date
+    window_days: int
+    categories_updated: int
+    rows_recomputed: int
+
+
+@dataclass(frozen=True)
 class AssessRunResult:
-    """Combined assess run result (step1 + step2 + step3)."""
+    """Combined assess run result (step1 + step2 + step3 + step4)."""
 
     target_date: date
     ghost_time: AssessGhostTimeResult
     scoring: AssessScoringResult
     aggregation: AssessAggregationResult
+    bayesian_norms: AssessBayesianNormsResult

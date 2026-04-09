@@ -27,3 +27,9 @@ def test_aggregation_queries_use_db_contract_tables() -> None:
     assert "FROM tasks_normalized AS tn" in queries.FETCH_AGGREGATION_INPUT_BY_DATE_SQL
     assert "LEFT JOIN daily_task_assessments AS dta" in queries.FETCH_AGGREGATION_INPUT_BY_DATE_SQL
     assert "INSERT INTO operational_cycles" in queries.UPSERT_OPERATIONAL_CYCLE_SQL
+
+
+def test_bayesian_norm_queries_use_contract_tables() -> None:
+    assert "FROM tasks_normalized" in queries.FETCH_WINDOW_CATEGORY_STATS_SQL
+    assert "INSERT INTO dynamic_task_norms" in queries.UPSERT_DYNAMIC_TASK_NORM_SQL
+    assert "UPDATE daily_task_assessments AS dta" in queries.RECOMPUTE_ASSESSMENT_NORMS_BY_DATE_SQL

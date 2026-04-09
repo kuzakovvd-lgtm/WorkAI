@@ -12,11 +12,13 @@ from psycopg import Cursor
 from WorkAI.assess.models import (
     AssessmentTaskForAggregation,
     DailyTaskAssessmentRow,
+    DynamicTaskNormRow,
     EmployeeDailyGhostTimeRow,
     EmployeeDayKey,
     EmployeeDayMetrics,
     NormalizedTaskForScoring,
     OperationalCycleRow,
+    TaskCategoryWindowStats,
 )
 
 LIST_EMPLOYEE_DAY_KEYS_SQL = """
@@ -177,6 +179,71 @@ DO UPDATE SET
     avg_quality_score = EXCLUDED.avg_quality_score,
     avg_smart_score = EXCLUDED.avg_smart_score,
     created_at = now()
+"""
+
+FETCH_WINDOW_CATEGORY_STATS_SQL = """
+SELECT
+    COALESCE(NULLIF(TRIM(task_category), ''), 'uncategorized') AS task_category,
+    COUNT(*)::int AS sample_size,
+    AVG(duration_minutes)::numeric AS sample_mean,
+    STDDEV_SAMP(duration_minutes)::numeric AS sample_stddev
+FROM tasks_normalized
+WHERE task_date BETWEEN %s AND %s
+  AND duration_minutes IS NOT NULL
+  AND duration_minutes >= 0
+GROUP BY 1
+ORDER BY 1
+"""
+
+UPSERT_DYNAMIC_TASK_NORM_SQL = """
+INSERT INTO dynamic_task_norms (
+    task_category,
+    norm_minutes,
+    stddev_minutes,
+    sample_size,
+    baseline_prior,
+    last_updated_at
+)
+VALUES (%s, %s, %s, %s, %s, now())
+ON CONFLICT (task_category)
+DO UPDATE SET
+    norm_minutes = EXCLUDED.norm_minutes,
+    stddev_minutes = EXCLUDED.stddev_minutes,
+    sample_size = EXCLUDED.sample_size,
+    baseline_prior = EXCLUDED.baseline_prior,
+    last_updated_at = now()
+"""
+
+RECOMPUTE_ASSESSMENT_NORMS_BY_DATE_SQL = """
+UPDATE daily_task_assessments AS dta
+SET
+    norm_minutes = ROUND(dtn.norm_minutes)::int,
+    delta_minutes = CASE
+        WHEN tn.duration_minutes IS NULL THEN NULL
+        ELSE tn.duration_minutes - ROUND(dtn.norm_minutes)::int
+    END,
+    assessed_at = now()
+FROM tasks_normalized AS tn
+JOIN dynamic_task_norms AS dtn
+  ON dtn.task_category = COALESCE(NULLIF(TRIM(tn.task_category), ''), 'uncategorized')
+WHERE dta.normalized_task_id = tn.id
+  AND dta.task_date = %s
+"""
+
+RECOMPUTE_ASSESSMENT_NORMS_BY_WINDOW_SQL = """
+UPDATE daily_task_assessments AS dta
+SET
+    norm_minutes = ROUND(dtn.norm_minutes)::int,
+    delta_minutes = CASE
+        WHEN tn.duration_minutes IS NULL THEN NULL
+        ELSE tn.duration_minutes - ROUND(dtn.norm_minutes)::int
+    END,
+    assessed_at = now()
+FROM tasks_normalized AS tn
+JOIN dynamic_task_norms AS dtn
+  ON dtn.task_category = COALESCE(NULLIF(TRIM(tn.task_category), ''), 'uncategorized')
+WHERE dta.normalized_task_id = tn.id
+  AND dta.task_date BETWEEN %s AND %s
 """
 
 
@@ -363,6 +430,70 @@ def upsert_operational_cycles_batch(
             for row in rows
         ],
     )
+
+
+def fetch_window_category_stats(
+    cur: Cursor[object],
+    window_start: date,
+    window_end: date,
+) -> list[TaskCategoryWindowStats]:
+    """Read observed duration stats by task category for Bayesian update window."""
+
+    cur.execute(FETCH_WINDOW_CATEGORY_STATS_SQL, (window_start, window_end))
+    rows = cast(list[tuple[Any, ...]], cur.fetchall())
+    result: list[TaskCategoryWindowStats] = []
+    for row in rows:
+        result.append(
+            TaskCategoryWindowStats(
+                task_category=str(row[0]),
+                sample_size=int(row[1]),
+                sample_mean=None if row[2] is None else cast(Decimal, row[2]),
+                sample_stddev_minutes=None if row[3] is None else cast(Decimal, row[3]),
+            )
+        )
+    return result
+
+
+def upsert_dynamic_task_norms_batch(
+    cur: Cursor[object],
+    rows: Sequence[DynamicTaskNormRow],
+) -> None:
+    """Batch upsert dynamic_task_norms rows."""
+
+    if not rows:
+        return
+
+    cur.executemany(
+        UPSERT_DYNAMIC_TASK_NORM_SQL,
+        [
+            (
+                row.task_category,
+                row.norm_minutes,
+                row.stddev_minutes,
+                row.sample_size,
+                row.baseline_prior,
+            )
+            for row in rows
+        ],
+    )
+
+
+def recompute_assessment_norms_for_date(cur: Cursor[object], target_date: date) -> int:
+    """Recompute norm/delta fields for one assessment date."""
+
+    cur.execute(RECOMPUTE_ASSESSMENT_NORMS_BY_DATE_SQL, (target_date,))
+    return int(cur.rowcount)
+
+
+def recompute_assessment_norms_for_window(
+    cur: Cursor[object],
+    window_start: date,
+    window_end: date,
+) -> int:
+    """Recompute norm/delta fields for all assessment rows in date window."""
+
+    cur.execute(RECOMPUTE_ASSESSMENT_NORMS_BY_WINDOW_SQL, (window_start, window_end))
+    return int(cur.rowcount)
 
 
 def _row_to_scoring_task(row: tuple[Any, ...]) -> NormalizedTaskForScoring:
