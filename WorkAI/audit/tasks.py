@@ -10,7 +10,7 @@ from WorkAI.common import ConfigError
 
 def _get_crewai_task_class() -> Any:
     try:
-        from crewai import Task  # type: ignore[import-not-found]
+        from crewai import Task
     except ImportError as exc:  # pragma: no cover - depends on optional runtime dependency
         raise ConfigError("CrewAI is not installed; cannot build audit tasks") from exc
     return Task

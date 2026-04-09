@@ -34,7 +34,7 @@ _LOG = get_logger(__name__)
 
 def _get_crewai_crew_types() -> tuple[type[Any], Any]:
     try:
-        from crewai import Crew, Process  # type: ignore[import-not-found]
+        from crewai import Crew, Process
     except ImportError as exc:  # pragma: no cover - runtime dependency resolution
         raise ConfigError("CrewAI is not installed; audit run is unavailable") from exc
     return Crew, Process

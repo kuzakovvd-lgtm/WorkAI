@@ -7,6 +7,7 @@ from typing import Any, cast
 from uuid import UUID
 
 from psycopg import Cursor
+from psycopg.types.json import Jsonb
 
 from WorkAI.audit.models import AuditPrefetchPayload, AuditRunRecord
 
@@ -109,7 +110,8 @@ def insert_run(
 ) -> AuditRunRecord:
     """Insert audit run row and return full metadata."""
 
-    cur.execute(INSERT_AUDIT_RUN_SQL, (employee_id, task_date, status, report_json, error, forced))
+    report_payload = Jsonb(report_json) if report_json is not None else None
+    cur.execute(INSERT_AUDIT_RUN_SQL, (employee_id, task_date, status, report_payload, error, forced))
     row = cur.fetchone()
     if row is None:
         raise RuntimeError("Failed to insert audit run")
@@ -119,7 +121,7 @@ def insert_run(
 def mark_run_completed(cur: Cursor[object], run_id: UUID, report_json: dict[str, object]) -> None:
     """Persist completed status and report payload."""
 
-    cur.execute(COMPLETE_AUDIT_RUN_SQL, (report_json, run_id))
+    cur.execute(COMPLETE_AUDIT_RUN_SQL, (Jsonb(report_json), run_id))
 
 
 def mark_run_failed(cur: Cursor[object], run_id: UUID, error: str) -> None:

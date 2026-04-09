@@ -12,7 +12,7 @@ from WorkAI.config import Settings
 
 def _get_crewai_agent_class() -> Any:
     try:
-        from crewai import Agent  # type: ignore[import-not-found]
+        from crewai import Agent
     except ImportError as exc:  # pragma: no cover - depends on optional runtime dependency
         raise ConfigError(
             "CrewAI is not installed. Install project dependencies with `pip install -e '.[dev]'`."

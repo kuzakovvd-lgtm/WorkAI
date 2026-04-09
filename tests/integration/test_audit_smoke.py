@@ -34,6 +34,15 @@ def test_audit_run_cache_and_force_semantics(monkeypatch: pytest.MonkeyPatch) ->
             cur.execute("DELETE FROM audit_feedback")
             cur.execute("DELETE FROM audit_runs WHERE employee_id = %s AND task_date = %s", (employee_id, target_date))
             cur.execute(
+                """
+                INSERT INTO employees (employee_id, employee_name_norm)
+                VALUES (%s, %s)
+                ON CONFLICT (employee_id)
+                DO UPDATE SET employee_name_norm = EXCLUDED.employee_name_norm
+                """,
+                (employee_id, f"employee-{employee_id}"),
+            )
+            cur.execute(
                 "DELETE FROM operational_cycles WHERE employee_id = %s AND task_date = %s",
                 (employee_id, target_date),
             )
@@ -179,6 +188,15 @@ def test_audit_failed_status_on_crew_error() -> None:
     try:
         with connection() as conn, conn.cursor() as cur:
             cur.execute("DELETE FROM audit_runs WHERE employee_id = %s AND task_date = %s", (employee_id, target_date))
+            cur.execute(
+                """
+                INSERT INTO employees (employee_id, employee_name_norm)
+                VALUES (%s, %s)
+                ON CONFLICT (employee_id)
+                DO UPDATE SET employee_name_norm = EXCLUDED.employee_name_norm
+                """,
+                (employee_id, f"employee-{employee_id}"),
+            )
             cur.execute(
                 "DELETE FROM operational_cycles WHERE employee_id = %s AND task_date = %s",
                 (employee_id, target_date),
