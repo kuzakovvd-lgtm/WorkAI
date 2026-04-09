@@ -62,4 +62,4 @@ doesn't import parse - both talk to PostgreSQL through `db/`.
 | 11 | Migration & cutover from v1 |
 | 12 | Hardening (tests, mypy strict, benchmarks) |
 
-Current phase: **8 (API / FastAPI)**.
+Current phase: **9 (Notifier / Telegram alerts)**.

@@ -215,6 +215,38 @@ Audit usage telemetry:
 - run writes `_usage` object to `audit_runs.report_json`;
 - telemetry extraction is best-effort and must not fail audit run when provider format changes.
 
+## Notifier run (Phase 9)
+
+Run one notifier smoke attempt:
+
+```bash
+export WORKAI_DB__DSN=postgresql://user:pass@host:5432/workai
+export TELEGRAM_BOT_TOKEN=<secret>
+export TELEGRAM_ADMIN_CHAT_ID=<chat-id>
+export TELEGRAM_MGMT_CHAT_ID=<chat-id>
+python scripts/run_notifier_smoke.py send-test --level info --subject "Notifier smoke" --body "phase-9 check"
+```
+
+Notifier policy:
+
+- levels route to channels:
+  - `infra_critical` -> admin chat;
+  - `data_warning` -> management chat;
+  - `info` -> info chat if configured, else admin fallback.
+- every attempt writes one row to `notification_log`, including failures.
+- Telegram transport failures do not crash caller; result is persisted with `delivered=false`.
+
+Inspect recent notification attempts:
+
+```bash
+psql "$WORKAI_DB__DSN" -c "
+SELECT id, sent_at, channel, level, subject, delivered, left(coalesce(error, ''), 120) AS error
+FROM notification_log
+ORDER BY id DESC
+LIMIT 50;
+"
+```
+
 ## Server path conventions
 
 - v2: `/opt/WorkAI`

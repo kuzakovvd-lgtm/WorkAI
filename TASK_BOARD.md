@@ -16,17 +16,18 @@ Policy: every non-trivial iteration must update this board together with
 - [x] Phase 5 assess layer (ghost time, scoring, aggregation, Bayesian norms).
 - [x] Phase 6 knowledge base (markdown index + PostgreSQL FTS lookup + cache).
 - [x] Phase 7 AI audit layer (CrewAI sequential flow + audit_runs).
+- [x] Phase 8 API layer (FastAPI routes + auth + integration smoke).
 
 ## In progress
 
-- [ ] Phase 8 API layer (FastAPI routes + auth + integration smoke).
+- [ ] Phase 9 notifier layer (Telegram alerts + notification_log).
 
 ## Next
 
-- [ ] Finalize Phase 8 validation in CI and merge.
-- [ ] Start Phase 9 notifier layer.
-- [ ] Prepare API usage docs for client integrations.
+- [ ] Finalize Phase 9 validation in CI and merge.
+- [ ] Start Phase 10 ops layer.
+- [ ] Prepare notifier operation checklist for on-call.
 
 ## Backlog
 
-- [ ] API + notifier + ops (Phases 8-10).
+- [ ] Notifier + ops (Phases 9-10).

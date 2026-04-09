@@ -212,6 +212,25 @@ class ApiSettings(BaseModel):
     api_key: str | None = Field(default=None, validation_alias="WORKAI_API_KEY")
 
 
+class NotifierSettings(BaseModel):
+    """Notifier runtime configuration."""
+
+    enabled: bool = False
+    telegram_bot_token: str | None = Field(default=None, validation_alias="TELEGRAM_BOT_TOKEN")
+    telegram_admin_chat_id: str | None = Field(default=None, validation_alias="TELEGRAM_ADMIN_CHAT_ID")
+    telegram_mgmt_chat_id: str | None = Field(default=None, validation_alias="TELEGRAM_MGMT_CHAT_ID")
+    telegram_info_chat_id: str | None = Field(default=None, validation_alias="TELEGRAM_INFO_CHAT_ID")
+    request_timeout_sec: float = 10.0
+
+    @model_validator(mode="after")
+    def validate_ranges(self) -> NotifierSettings:
+        """Validate notifier limits when enabled."""
+
+        if self.request_timeout_sec <= 0:
+            raise ValueError("WORKAI_NOTIFIER__REQUEST_TIMEOUT_SEC must be > 0")
+        return self
+
+
 class Settings(BaseSettings):
     """Root settings object for the service."""
 
@@ -231,6 +250,7 @@ class Settings(BaseSettings):
     normalize: NormalizeSettings = Field(default_factory=NormalizeSettings)
     audit: AuditSettings = Field(default_factory=AuditSettings)
     api: ApiSettings = Field(default_factory=ApiSettings)
+    notifier: NotifierSettings = Field(default_factory=NotifierSettings)
 
     @model_validator(mode="after")
     def sync_root_env_to_app(self) -> Settings:
@@ -241,6 +261,23 @@ class Settings(BaseSettings):
             raw_api_key = os.getenv("OPENAI_API_KEY", "").strip()
             if raw_api_key != "":
                 self.audit.openai_api_key = raw_api_key
+
+        if self.notifier.telegram_bot_token is None:
+            raw_bot_token = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
+            if raw_bot_token != "":
+                self.notifier.telegram_bot_token = raw_bot_token
+        if self.notifier.telegram_admin_chat_id is None:
+            raw_admin_chat = os.getenv("TELEGRAM_ADMIN_CHAT_ID", "").strip()
+            if raw_admin_chat != "":
+                self.notifier.telegram_admin_chat_id = raw_admin_chat
+        if self.notifier.telegram_mgmt_chat_id is None:
+            raw_mgmt_chat = os.getenv("TELEGRAM_MGMT_CHAT_ID", "").strip()
+            if raw_mgmt_chat != "":
+                self.notifier.telegram_mgmt_chat_id = raw_mgmt_chat
+        if self.notifier.telegram_info_chat_id is None:
+            raw_info_chat = os.getenv("TELEGRAM_INFO_CHAT_ID", "").strip()
+            if raw_info_chat != "":
+                self.notifier.telegram_info_chat_id = raw_info_chat
         return self
 
 

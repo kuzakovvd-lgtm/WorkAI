@@ -10,9 +10,9 @@ Database schema is the formal contract between modules.
 - All modules may depend on `db`, `config`, `common`.
 - Reverse/circular imports across domain modules are forbidden.
 
-## Current contract state (Phase 2/3/4.5/5.4/6/7)
+## Current contract state (Phase 2/3/4.5/5.4/6/7/9)
 
-- Alembic chain: `0001_baseline` -> `0002_sheet_cells` -> `0003_raw_tasks` -> `0004_tasks_normalized` -> `0005_pipeline_errors` -> `0006_employee_daily_ghost_time` -> `0007_tasks_norm_contract` -> `0008_daily_task_assess` -> `0009_tasks_norm_time_source` -> `0010_operational_cycles` -> `0011_dynamic_task_norms` -> `0012_knowledge_base_articles` -> `0013_audit_tables`.
+- Alembic chain: `0001_baseline` -> `0002_sheet_cells` -> `0003_raw_tasks` -> `0004_tasks_normalized` -> `0005_pipeline_errors` -> `0006_employee_daily_ghost_time` -> `0007_tasks_norm_contract` -> `0008_daily_task_assess` -> `0009_tasks_norm_time_source` -> `0010_operational_cycles` -> `0011_dynamic_task_norms` -> `0012_knowledge_base_articles` -> `0013_audit_tables` -> `0014_notification_log`.
 - Runtime DB access goes through `WorkAI.db` helpers and explicit `init_db()`.
 
 ### `sheet_cells` (ingest -> parse contract)
@@ -178,6 +178,18 @@ Database schema is the formal contract between modules.
   - `runs_count`, `input_tokens`, `output_tokens`, `cost_usd`, `rollup_at`.
 - Note:
   - rollup automation is deferred to ops phase; table contract is created in Phase 7.
+
+### `notification_log` (notifier delivery ledger contract)
+
+- Purpose: persistent log of every notifier delivery attempt across channels.
+- Primary key: `id` (bigserial).
+- Required fields:
+  - `sent_at`, `channel`, `level`, `subject`, `delivered`.
+- Optional payload:
+  - `body`, `error`.
+- Idempotency expectation:
+  - notifier logs every send attempt as an immutable row;
+  - failure path must still insert row with `delivered=false` and non-empty `error`.
 
 ## Invariants
 

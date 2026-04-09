@@ -126,3 +126,28 @@ def test_normalize_invalid_max_errors_raises(monkeypatch: pytest.MonkeyPatch) ->
     get_settings.cache_clear()
     with pytest.raises(ValueError, match="WORKAI_NORMALIZE__MAX_ERRORS_PER_SHEET"):
         get_settings()
+
+
+def test_notifier_env_loading(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("WORKAI_NOTIFIER__ENABLED", "true")
+    monkeypatch.setenv("WORKAI_NOTIFIER__REQUEST_TIMEOUT_SEC", "12.5")
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "abc")
+    monkeypatch.setenv("TELEGRAM_ADMIN_CHAT_ID", "100")
+    monkeypatch.setenv("TELEGRAM_MGMT_CHAT_ID", "200")
+
+    get_settings.cache_clear()
+    settings = get_settings()
+
+    assert settings.notifier.enabled is True
+    assert settings.notifier.request_timeout_sec == 12.5
+    assert settings.notifier.telegram_bot_token == "abc"
+    assert settings.notifier.telegram_admin_chat_id == "100"
+    assert settings.notifier.telegram_mgmt_chat_id == "200"
+
+
+def test_notifier_invalid_timeout_raises(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("WORKAI_NOTIFIER__REQUEST_TIMEOUT_SEC", "0")
+
+    get_settings.cache_clear()
+    with pytest.raises(ValueError, match="WORKAI_NOTIFIER__REQUEST_TIMEOUT_SEC"):
+        get_settings()

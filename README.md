@@ -2,7 +2,7 @@
 
 Employee quality & audit system — v2 modular rewrite.
 
-**Status:** Phase 8 — API (FastAPI) layer.
+**Status:** Phase 9 — Notifier layer.
 
 ## What it does
 
@@ -225,6 +225,31 @@ Required API env:
 
 - `WORKAI_API_KEY=<secret>`
 - `WORKAI_DB__DSN=postgresql://user:pass@host:5432/workai`
+
+## Notifier (Phase 9)
+
+Notifier sends Telegram alerts by severity and logs **every** attempt into
+`notification_log`.
+
+Required env:
+
+- `WORKAI_DB__DSN=postgresql://user:pass@host:5432/workai`
+- `TELEGRAM_BOT_TOKEN=<secret>`
+- `TELEGRAM_ADMIN_CHAT_ID=<chat-id>`
+- `TELEGRAM_MGMT_CHAT_ID=<chat-id>`
+- optional: `TELEGRAM_INFO_CHAT_ID=<chat-id>`
+
+Run notifier smoke:
+
+```bash
+python scripts/run_notifier_smoke.py send-test --level info --subject "Notifier smoke" --body "phase-9"
+```
+
+Severity routing (MVP):
+
+- `infra_critical` -> admin chat
+- `data_warning` -> management chat
+- `info` -> info chat if set, otherwise admin fallback
 
 ## Project structure
 

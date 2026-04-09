@@ -118,5 +118,13 @@ jobs:
             exit 1
           fi
 
+      - name: Notifier integration smoke (must not skip)
+        run: |
+          pytest -q tests/integration/test_notifier_smoke.py -rA | tee /tmp/notifier_smoke.txt
+          if grep -Eq "SKIPPED| [0-9]+ skipped" /tmp/notifier_smoke.txt; then
+            echo "Notifier integration smoke was skipped, expected real execution"
+            exit 1
+          fi
+
       - name: Integration tests (PostgreSQL)
         run: pytest -q -m integration
