@@ -14,19 +14,19 @@ Policy: every non-trivial iteration must update this board together with
 - [x] Phase 4 normalize layer (`raw_tasks -> tasks_normalized`).
 - [x] Phase 4.5 pre-flight hardening (CI postgres, DLQ, normalize single-flight lock).
 - [x] Phase 5 assess layer (ghost time, scoring, aggregation, Bayesian norms).
+- [x] Phase 6 knowledge base (markdown index + PostgreSQL FTS lookup + cache).
 
 ## In progress
 
-- [ ] Phase 6 knowledge base (FTS index + lookup + cache).
+- [ ] Phase 7 AI audit (CrewAI sequential flow + audit_runs).
 
 ## Next
 
-- [ ] Finalize Phase 6 validation in CI and merge.
-- [ ] Start Phase 7 audit layer scaffolding against assess + knowledge contracts.
-- [ ] Add audit-focused integration smoke tests.
+- [ ] Finalize Phase 7 validation in CI and merge.
+- [ ] Start Phase 8 API layer against assess/audit contracts.
+- [ ] Add API-focused integration smoke tests.
 
 ## Backlog
 
-- [ ] Knowledge base (Phase 6).
 - [ ] Audit orchestration (Phase 7).
 - [ ] API + notifier + ops (Phases 8-10).

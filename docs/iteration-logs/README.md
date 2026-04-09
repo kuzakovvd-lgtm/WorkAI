@@ -14,6 +14,7 @@ Format rules:
 
 | Date | Iteration | Scope | Commit | Status | Log |
 |---|---|---|---|---|---|
+| 2026-04-09 | Phase 7 | AI Audit (CrewAI) sequential flow + cache/force + usage telemetry | `pending` | In progress | [2026-04-09_phase-7_audit-crewai.md](./2026-04-09_phase-7_audit-crewai.md) |
 | 2026-04-09 | Phase 6 | Knowledge Base (markdown indexing + PostgreSQL FTS lookup + cache) | `pending` | In progress | [2026-04-09_phase-6_knowledge-base.md](./2026-04-09_phase-6_knowledge-base.md) |
 | 2026-04-09 | Phase 4.5 | Pre-flight hardening (CI postgres + DLQ + normalize lock) | `pending` | Completed | [2026-04-09_phase-4.5_hardening.md](./2026-04-09_phase-4.5_hardening.md) |
 | 2026-04-08 | Phase 4 | Normalize layer (raw_tasks -> tasks_normalized) | `pending` | Completed | [2026-04-08_phase-4_normalize.md](./2026-04-08_phase-4_normalize.md) |

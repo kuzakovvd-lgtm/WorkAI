@@ -2,7 +2,7 @@
 
 Employee quality & audit system — v2 modular rewrite.
 
-**Status:** Phase 6 — Knowledge Base layer.
+**Status:** Phase 7 — AI Audit (CrewAI) layer.
 
 ## What it does
 
@@ -182,6 +182,27 @@ Notes:
 
 - Lookup uses LRU cache (`maxsize=100`) keyed by `(query, limit)`.
 - Cache is explicitly cleared after each indexing run.
+
+## AI Audit (Phase 7)
+
+Audit layer runs a sequential 3-agent CrewAI flow and stores results in `audit_runs`.
+
+- Agents:
+  - Operational Efficiency Analyst (`gpt-4o-mini`)
+  - Data Integrity Forensic (`gpt-4o-mini`)
+  - Strategic Management Reporter (`gpt-4o`)
+- Models are configured only via ENV/settings (`OPENAI_MODEL_*`).
+- Runner contract:
+  - `run_audit(employee_id, task_date, force=False)`
+  - cache semantics via `completed`/`completed_cached`
+  - usage telemetry saved under `report_json._usage`
+
+Run audit from CLI:
+
+```bash
+python scripts/run_audit.py run --employee-id 42 --date 2026-04-09
+python scripts/run_audit.py run --employee-id 42 --date 2026-04-09 --force
+```
 
 ## Project structure
 

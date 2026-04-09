@@ -2,6 +2,7 @@
 
 from WorkAI.config.settings import (
     AppSettings,
+    AuditSettings,
     DatabaseSettings,
     GoogleSheetsSettings,
     LoggingSettings,
@@ -13,6 +14,7 @@ from WorkAI.config.settings import (
 
 __all__ = [
     "AppSettings",
+    "AuditSettings",
     "DatabaseSettings",
     "GoogleSheetsSettings",
     "LoggingSettings",

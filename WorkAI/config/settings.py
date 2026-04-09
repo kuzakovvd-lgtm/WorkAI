@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from functools import lru_cache
 from typing import Annotated, Literal
 
@@ -180,6 +181,31 @@ class NormalizeSettings(BaseModel):
         return self
 
 
+class AuditSettings(BaseModel):
+    """Audit layer runtime and model configuration."""
+
+    enabled: bool = False
+    openai_api_key: str | None = Field(default=None, validation_alias="OPENAI_API_KEY")
+    model_analyst: str = Field(default="gpt-4o-mini", validation_alias="OPENAI_MODEL_ANALYST")
+    model_forensic: str = Field(default="gpt-4o-mini", validation_alias="OPENAI_MODEL_FORENSIC")
+    model_reporter: str = Field(default="gpt-4o", validation_alias="OPENAI_MODEL_REPORTER")
+    openai_max_retries: int = Field(default=2, validation_alias="OPENAI_MAX_RETRIES")
+    max_iter: int = 5
+    max_rpm: int = 10
+
+    @model_validator(mode="after")
+    def validate_limits(self) -> AuditSettings:
+        """Validate audit runtime limits."""
+
+        if self.max_iter <= 0:
+            raise ValueError("WORKAI_AUDIT__MAX_ITER must be > 0")
+        if self.max_rpm <= 0:
+            raise ValueError("WORKAI_AUDIT__MAX_RPM must be > 0")
+        if self.openai_max_retries < 0:
+            raise ValueError("OPENAI_MAX_RETRIES must be >= 0")
+        return self
+
+
 class Settings(BaseSettings):
     """Root settings object for the service."""
 
@@ -197,12 +223,17 @@ class Settings(BaseSettings):
     gsheets: GoogleSheetsSettings = Field(default_factory=GoogleSheetsSettings)
     parse: ParseSettings = Field(default_factory=ParseSettings)
     normalize: NormalizeSettings = Field(default_factory=NormalizeSettings)
+    audit: AuditSettings = Field(default_factory=AuditSettings)
 
     @model_validator(mode="after")
     def sync_root_env_to_app(self) -> Settings:
         """Keep WORKAI_ENV as the canonical env selector for app metadata."""
 
         self.app.env = self.env
+        if self.audit.openai_api_key is None:
+            raw_api_key = os.getenv("OPENAI_API_KEY", "").strip()
+            if raw_api_key != "":
+                self.audit.openai_api_key = raw_api_key
         return self
 
 

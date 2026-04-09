@@ -117,3 +117,24 @@ This file stores short ADR-style entries.
   - use soft-sync in MVP (do not auto-delete rows for missing files);
   - use lookup LRU cache (`maxsize=100`) by `(query, limit)` and clear cache after index run.
 - Consequences: predictable reruns and safe first rollout; stale rows from deleted files may remain until future cleanup policy/full-sync mode is introduced.
+
+## ADR-0015: Audit run cache semantics via completed and completed_cached ledger rows
+
+- Status: Accepted
+- Date: 2026-04-09
+- Context: Phase 7 requires idempotent `run_audit(employee_id, task_date, force=False)` while preserving observability of cache hits.
+- Decision:
+  - keep latest real execution as `completed`;
+  - on non-force cache hit, persist a new `completed_cached` row carrying reused report payload;
+  - on `force=true`, always create a new `processing -> completed/failed` run.
+- Consequences: full run history remains explicit and queryable; repeated cached calls increase ledger row count by design.
+
+## ADR-0016: Audit prefetch and tool usage boundaries
+
+- Status: Accepted
+- Date: 2026-04-09
+- Context: Crew tasks must not repeatedly fetch the same operational data and should only call methodology lookup when needed.
+- Decision:
+  - prefetch operational cycles and assess metrics once before Crew kickoff and pass through `inputs`;
+  - reporter-only `MethodologyLookupTool` is enabled conditionally when `ghost_time_hours >= 4.0`.
+- Consequences: deterministic, lower-overhead audit runs and reduced duplicate I/O during sequential agent execution.

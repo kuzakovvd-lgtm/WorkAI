@@ -190,6 +190,31 @@ Phase 6 policy:
 - lookup uses LRU cache (`maxsize=100`) by `(query, limit)`;
 - cache is explicitly cleared after each successful index run.
 
+## Audit run (Phase 7)
+
+Run one employee/day audit:
+
+```bash
+export WORKAI_AUDIT__ENABLED=true
+export OPENAI_API_KEY=<secret>
+export OPENAI_MODEL_ANALYST=gpt-4o-mini
+export OPENAI_MODEL_FORENSIC=gpt-4o-mini
+export OPENAI_MODEL_REPORTER=gpt-4o
+python scripts/run_audit.py run --employee-id 42 --date 2026-04-09
+python scripts/run_audit.py run --employee-id 42 --date 2026-04-09 --force
+```
+
+Cache/force semantics:
+
+- `force=false`: if `completed` run exists for `(employee_id, task_date)`, runner returns cached report.
+- Cached hit is logged as `completed_cached` in `audit_runs`.
+- `force=true`: always creates a new `processing -> completed/failed` run.
+
+Audit usage telemetry:
+
+- run writes `_usage` object to `audit_runs.report_json`;
+- telemetry extraction is best-effort and must not fail audit run when provider format changes.
+
 ## Server path conventions
 
 - v2: `/opt/WorkAI`
