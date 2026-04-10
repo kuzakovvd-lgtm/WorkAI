@@ -12,15 +12,15 @@ if str(PROJECT_ROOT) not in sys.path:
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="WorkAI knowledge base indexer")
+    parser = argparse.ArgumentParser(description="WorkAI knowledge base indexer (md/docx/pdf)")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    run_parser = subparsers.add_parser("run", help="Index markdown methodology sources")
+    run_parser = subparsers.add_parser("run", help="Index methodology sources")
     run_parser.add_argument(
         "--source-dir",
         dest="source_dir",
         default="/etc/workai/knowledge/sources",
-        help="Directory containing markdown sources (*.md)",
+        help="Directory containing sources (*.md, *.docx, *.pdf)",
     )
 
     return parser

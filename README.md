@@ -187,7 +187,7 @@ python scripts/workai_explain_assess.py --date 2026-04-07
 
 ## Knowledge Base (Phase 6)
 
-Knowledge Base indexes methodology markdown files into PostgreSQL and provides FTS lookup.
+Knowledge Base indexes methodology files (`.md`, `.docx`, `.pdf`) into PostgreSQL and provides FTS lookup.
 
 - Source directory (default): `/etc/workai/knowledge/sources/*.md`
 - Sync strategy (MVP): **soft-sync** (missing files are not deleted from DB).
