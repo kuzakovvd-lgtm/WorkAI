@@ -55,10 +55,12 @@ def test_knowledge_base_index_and_lookup_smoke(tmp_path: Path) -> None:
 
     assert first.files_seen == 2
     assert first.rows_upserted == 2
+    assert first.chunks_upserted >= 2
     assert first.errors_count == 0
 
     assert second.files_seen == 2
     assert second.rows_upserted == 2
+    assert second.chunks_upserted >= 2
     assert second.errors_count == 0
 
     results = lookup_methodology("ghost time", limit=5)
@@ -70,7 +72,11 @@ def test_knowledge_base_index_and_lookup_smoke(tmp_path: Path) -> None:
         with connection() as conn, conn.cursor() as cur:
             cur.execute("SELECT count(*) FROM knowledge_base_articles")
             row = cur.fetchone()
+            cur.execute("SELECT count(*) FROM knowledge_base_chunks")
+            chunks_row = cur.fetchone()
         assert row is not None
+        assert chunks_row is not None
         assert int(row[0]) == 2
+        assert int(chunks_row[0]) >= 2
     finally:
         close_db()

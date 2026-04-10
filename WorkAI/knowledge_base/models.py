@@ -32,4 +32,5 @@ class KnowledgeIndexResult:
 
     files_seen: int
     rows_upserted: int
+    chunks_upserted: int
     errors_count: int

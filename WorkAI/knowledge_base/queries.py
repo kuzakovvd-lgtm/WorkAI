@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from psycopg import Cursor
+from psycopg.errors import UndefinedTable
 
 from WorkAI.knowledge_base.models import KnowledgeArticleDocument, KnowledgeSearchResult
 
@@ -32,6 +33,24 @@ WITH q AS (
 SELECT
     a.source_path,
     a.title,
+    c.chunk_text AS body,
+    a.tags,
+    ts_rank(c.fts, q.query) AS rank
+FROM knowledge_base_chunks AS c
+JOIN knowledge_base_articles AS a ON a.source_path = c.source_path
+CROSS JOIN q
+WHERE c.fts @@ q.query
+ORDER BY rank DESC, a.source_path ASC, c.chunk_no ASC
+LIMIT %s
+"""
+
+LOOKUP_METHODOLOGY_FALLBACK_SQL = """
+WITH q AS (
+    SELECT websearch_to_tsquery('russian', %s) AS query
+)
+SELECT
+    a.source_path,
+    a.title,
     a.body,
     a.tags,
     ts_rank(a.fts, q.query) AS rank
@@ -40,6 +59,21 @@ CROSS JOIN q
 WHERE a.fts @@ q.query
 ORDER BY rank DESC, a.source_path ASC
 LIMIT %s
+"""
+
+DELETE_CHUNKS_BY_SOURCES_SQL = """
+DELETE FROM knowledge_base_chunks
+WHERE source_path = ANY(%s)
+"""
+
+INSERT_CHUNKS_SQL = """
+INSERT INTO knowledge_base_chunks (
+    source_path,
+    chunk_no,
+    chunk_text,
+    indexed_at
+)
+VALUES (%s, %s, %s, now())
 """
 
 COUNT_ARTICLES_SQL = """
@@ -73,7 +107,10 @@ def lookup_articles(
 ) -> list[KnowledgeSearchResult]:
     """Perform FTS lookup using websearch_to_tsquery + ts_rank."""
 
-    cursor.execute(LOOKUP_METHODOLOGY_SQL, (query, limit))
+    try:
+        cursor.execute(LOOKUP_METHODOLOGY_SQL, (query, limit))
+    except UndefinedTable:
+        cursor.execute(LOOKUP_METHODOLOGY_FALLBACK_SQL, (query, limit))
     rows = cursor.fetchall()
 
     results: list[KnowledgeSearchResult] = []
@@ -90,6 +127,24 @@ def lookup_articles(
             )
         )
     return results
+
+
+def replace_article_chunks(
+    cursor: Cursor[tuple[object, ...]],
+    source_path: str,
+    chunks: Sequence[str],
+) -> int:
+    """Replace stored chunks for one source_path."""
+
+    cursor.execute(DELETE_CHUNKS_BY_SOURCES_SQL, ([source_path],))
+    if not chunks:
+        return 0
+
+    cursor.executemany(
+        INSERT_CHUNKS_SQL,
+        [(source_path, index + 1, chunk) for index, chunk in enumerate(chunks)],
+    )
+    return len(chunks)
 
 
 def count_articles(cursor: Cursor[tuple[int]]) -> int:
