@@ -1,5 +1,28 @@
 # WorkAI Runbook
 
+## Current production-like baseline (2026-04-10)
+
+- Runtime path: `/opt/workai -> /opt/WorkAI`
+- Active branch: `Itogmain`
+- Connected Google Sheets are ingesting into `sheet_cells`
+- Parse fallback for weekly-board layout is enabled and producing `raw_tasks`
+- Notifier and healthcheck are operational
+
+Baseline counters:
+
+- `sheet_cells = 31376`
+- `raw_tasks = 1892`
+- `tasks_normalized = 1892`
+- `daily_task_assessments = 39`
+- `operational_cycles = 39`
+- `audit_runs = 4`
+
+Baseline caveat history:
+
+- Known issue during baseline capture: `run_audit --force` could fail in error-path
+  when DB pool was closed by an inner tool call. This issue is tracked and fixed in a
+  narrow hotfix (see `DECISIONS.md`).
+
 ## Local setup
 
 ```bash

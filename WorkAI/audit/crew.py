@@ -25,7 +25,7 @@ from WorkAI.audit.queries import (
 from WorkAI.audit.schemas import FinalAuditReport
 from WorkAI.audit.tasks import build_forensic_task, build_operational_task, build_reporter_task
 from WorkAI.audit.tools import MethodologyLookupTool, should_use_methodology_lookup
-from WorkAI.common import ConfigError, configure_logging, get_logger
+from WorkAI.common import ConfigError, DatabaseError, configure_logging, get_logger
 from WorkAI.config import Settings, get_settings
 from WorkAI.db import close_db, connection, init_db
 
@@ -186,9 +186,7 @@ def run_audit(
 
     except Exception as exc:
         if processing_run_id is not None:
-            with connection() as conn, conn.cursor() as cur:
-                mark_run_failed(cur, processing_run_id, str(exc))
-                conn.commit()
+            _persist_failed_run(processing_run_id, str(exc), resolved=resolved)
         _LOG.exception(
             "audit_failed",
             employee_id=employee_id,
@@ -198,6 +196,21 @@ def run_audit(
         raise
     finally:
         close_db()
+
+
+def _persist_failed_run(run_id: UUID, error: str, *, resolved: Settings) -> None:
+    """Persist failed run status even if pool was closed during crew/tool execution."""
+
+    try:
+        with connection() as conn, conn.cursor() as cur:
+            mark_run_failed(cur, run_id, error)
+            conn.commit()
+            return
+    except DatabaseError:
+        init_db(resolved)
+        with connection() as conn, conn.cursor() as cur:
+            mark_run_failed(cur, run_id, error)
+            conn.commit()
 
 
 def _extract_report_payload(crew_result: Any) -> dict[str, Any]:

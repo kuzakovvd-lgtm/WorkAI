@@ -24,6 +24,19 @@ Status date: 2026-04-10
 
 Phase 12 hardening pass (coverage + static analysis + docs/perf/DR).
 
+## Confirmed v2 baseline
+
+As of 2026-04-10, v2 has a real production-like baseline on connected Google Sheets:
+
+- `sheet_cells = 31376`
+- `raw_tasks = 1892`
+- `tasks_normalized = 1892`
+- `daily_task_assessments = 39`
+- `operational_cycles = 39`
+- `audit_runs = 4`
+
+Known-at-capture caveat (resolved in hotfix): `run_audit --force` error-path pool lifecycle bug.
+
 ## Phase 11 Re-scope
 
 ### Decision

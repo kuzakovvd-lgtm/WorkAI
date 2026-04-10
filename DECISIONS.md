@@ -166,3 +166,28 @@ This file stores short ADR-style entries.
 - Consequences:
   - static analysis focuses on reliability/security/perf risks with actionable signal;
   - strictness is increased without introducing broad suppression in default developer loop.
+
+## ADR-0019: Freeze v2 production-like baseline from live sheets
+
+- Status: Accepted
+- Date: 2026-04-10
+- Context: WorkAI v2 reached stable end-to-end execution on connected Google Sheets and needs a fixed operational baseline before further hardening.
+- Decision:
+  - record baseline runtime assumptions (`/opt/workai -> /opt/WorkAI`, `Itogmain`);
+  - record observed pipeline counters as baseline snapshot;
+  - treat weekly-board parse support as part of baseline parser behavior.
+- Consequences:
+  - team has a concrete reference point for regression checks;
+  - future changes can be evaluated against a known live-data baseline.
+
+## ADR-0020: Audit force-path failure persistence must survive mid-run pool closure
+
+- Status: Accepted
+- Date: 2026-04-10
+- Context: `run_audit --force` could hit an exception after an inner tool call closed the shared DB pool, then fail again while writing `failed` status (`DatabaseError` masking original exception).
+- Decision:
+  - stop closing the global DB pool inside knowledge-base lookup calls used by audit tools;
+  - harden `run_audit` failure persistence with one re-init attempt before writing failed status.
+- Consequences:
+  - force-path no longer masks primary errors with pool lifecycle exceptions;
+  - failed-run observability in `audit_runs` is preserved even when pool closure happens mid-run.

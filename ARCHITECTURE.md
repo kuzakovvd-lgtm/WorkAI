@@ -64,6 +64,30 @@ doesn't import parse - both talk to PostgreSQL through `db/`.
 
 Current phase: **12 (Hardening)**.
 
+## Runtime baseline (v2-first)
+
+- Canonical runtime path: `/opt/workai` (with compatibility symlink to `/opt/WorkAI`).
+- Active release branch: `Itogmain`.
+- Live data contract is populated from connected Google Sheets end-to-end.
+
+Observed baseline counters (2026-04-10):
+
+- `sheet_cells = 31376`
+- `raw_tasks = 1892`
+- `tasks_normalized = 1892`
+- `daily_task_assessments = 39`
+- `operational_cycles = 39`
+- `audit_runs = 4`
+
+## Parse layout support
+
+Parse keeps strict matrix parsing and includes a deterministic weekly-board fallback for
+real sheets where:
+
+- week header is stored as range text (`dd.mm-dd.mm`) in column A;
+- employee identity is represented by worksheet title;
+- task text is stored in repeated day-column blocks with `Задача` headers.
+
 ## Phase 11 Decision
 
 ### Decision

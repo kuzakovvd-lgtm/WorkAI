@@ -14,6 +14,7 @@ Format rules:
 
 | Date | Iteration | Scope | Commit | Status | Log |
 |---|---|---|---|---|---|
+| 2026-04-10 | Baseline + Audit hotfix | Production-like baseline freeze + `run_audit --force` error-path fix | `pending` | In progress | [2026-04-10_baseline-and-audit-force-fix.md](./2026-04-10_baseline-and-audit-force-fix.md) |
 | 2026-04-10 | Phase 12 | Hardening (coverage/static/docs/perf/DR) | `pending` | In progress | [2026-04-10_phase-12_hardening.md](./2026-04-10_phase-12_hardening.md) |
 | 2026-04-09 | Phase 11 | Migration & cutover preparation (systemd templates + diff tooling + readiness checks) | `pending` | In progress | [2026-04-09_phase-11_migration-cutover.md](./2026-04-09_phase-11_migration-cutover.md) |
 | 2026-04-09 | Phase 10 | Operations layer (healthcheck + sweeper + rollup + verify_units) | `5d83842` | Completed | [2026-04-09_phase-10_operations.md](./2026-04-09_phase-10_operations.md) |

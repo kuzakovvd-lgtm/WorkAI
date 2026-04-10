@@ -4,6 +4,31 @@ Employee quality & audit system — v2 modular rewrite.
 
 **Status:** Phase 12 — Hardening.
 
+## Production baseline snapshot (2026-04-10)
+
+WorkAI v2 is running with real Google Sheets ingestion and downstream processing.
+
+- Runtime path: `/opt/workai -> /opt/WorkAI`
+- Active branch: `Itogmain`
+- Parse supports real weekly-board sheets (week blocks + day columns + sheet-as-employee fallback)
+- Healthcheck: working (`severity=info`)
+- Notifier: working (Telegram delivery + DB logging)
+
+Baseline counters captured on connected sources:
+
+- `sheet_cells = 31376`
+- `raw_tasks = 1892`
+- `tasks_normalized = 1892`
+- `daily_task_assessments = 39`
+- `operational_cycles = 39`
+- `audit_runs = 4`
+
+Historical note:
+
+- At baseline capture time there was a known defect in `run_audit --force` error-path
+  (pool lifecycle mismatch after tool-driven DB close). It was tracked as a non-baseline
+  success-path issue and fixed in a dedicated hotfix pass.
+
 ## What it does
 
 Pipeline: ingest Google Sheets -> parse workday maps -> normalize tasks ->

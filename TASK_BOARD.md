@@ -24,12 +24,14 @@ Policy: every non-trivial iteration must update this board together with
 
 - [ ] Phase 11 safe production launch of v2 (cutover gating + readiness checks).
 - [ ] Phase 12 hardening (coverage/static/docs/perf/DR).
+- [ ] Baseline documentation + force-path hotfix verification.
 
 ## Next
 
 - [ ] Finalize Phase 11 launch observation evidence.
 - [ ] Finalize Phase 12 CI evidence with hardened checks.
 - [ ] Publish final production readiness summary.
+- [ ] Keep weekly-board parse coverage/tests aligned with real connected sheets.
 
 ## Backlog
 

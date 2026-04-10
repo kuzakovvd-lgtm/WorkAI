@@ -6,7 +6,7 @@ from functools import lru_cache
 
 from WorkAI.common import configure_logging, get_logger
 from WorkAI.config import get_settings
-from WorkAI.db import close_db, connection, init_db
+from WorkAI.db import connection, init_db
 from WorkAI.knowledge_base.models import KnowledgeSearchResult
 from WorkAI.knowledge_base.queries import lookup_articles
 
@@ -17,11 +17,8 @@ _LOG = get_logger(__name__)
 def _lookup_cached(query: str, limit: int) -> tuple[KnowledgeSearchResult, ...]:
     resolved = get_settings()
     init_db(resolved)
-    try:
-        with connection() as conn, conn.cursor() as cur:
-            rows = lookup_articles(cur, query=query, limit=limit)
-    finally:
-        close_db()
+    with connection() as conn, conn.cursor() as cur:
+        rows = lookup_articles(cur, query=query, limit=limit)
     return tuple(rows)
 
 
