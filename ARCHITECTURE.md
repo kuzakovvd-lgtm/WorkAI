@@ -62,12 +62,16 @@ doesn't import parse - both talk to PostgreSQL through `db/`.
 | 11 | Safe production launch of v2 |
 | 12 | Hardening (coverage, static analysis, docs, perf, DR) |
 
-Current phase: **12 (Hardening)**.
+Current state: **Phases 0-12 completed** (Phase 11 re-scoped to v2-first launch).
 
 ## Runtime baseline (v2-first)
 
 - Canonical runtime path: `/opt/workai` (with compatibility symlink to `/opt/WorkAI`).
 - Active release branch: `Itogmain`.
+- Legacy v1 runtime is removed from active server operations.
+- DB split for safety:
+  - production runtime DB: `workai_v2_test`,
+  - integration smoke DB: `workai_v2_integration`.
 - Live data contract is populated from connected Google Sheets end-to-end.
 
 Observed baseline counters (2026-04-10):

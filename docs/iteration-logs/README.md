@@ -14,16 +14,17 @@ Format rules:
 
 | Date | Iteration | Scope | Commit | Status | Log |
 |---|---|---|---|---|---|
-| 2026-04-10 | Baseline + Audit hotfix | Production-like baseline freeze + `run_audit --force` error-path fix | `pending` | In progress | [2026-04-10_baseline-and-audit-force-fix.md](./2026-04-10_baseline-and-audit-force-fix.md) |
-| 2026-04-10 | Phase 12 | Hardening (coverage/static/docs/perf/DR) | `pending` | In progress | [2026-04-10_phase-12_hardening.md](./2026-04-10_phase-12_hardening.md) |
-| 2026-04-09 | Phase 11 | Migration & cutover preparation (systemd templates + diff tooling + readiness checks) | `pending` | In progress | [2026-04-09_phase-11_migration-cutover.md](./2026-04-09_phase-11_migration-cutover.md) |
+| 2026-04-10 | Final docs | Final project dossier + cross-doc synchronization to real runtime state | `historical` | Completed | [2026-04-10_final-documentation.md](./2026-04-10_final-documentation.md) |
+| 2026-04-10 | Baseline + Audit hotfix | Production-like baseline freeze + `run_audit --force` error-path fix | `92138a1` | Completed | [2026-04-10_baseline-and-audit-force-fix.md](./2026-04-10_baseline-and-audit-force-fix.md) |
+| 2026-04-10 | Phase 12 | Hardening (coverage/static/docs/perf/DR) | `ccdf8e3` | Completed | [2026-04-10_phase-12_hardening.md](./2026-04-10_phase-12_hardening.md) |
+| 2026-04-09 | Phase 11 | Migration & cutover preparation (systemd templates + diff tooling + readiness checks) | `ccdf8e3` | Completed | [2026-04-09_phase-11_migration-cutover.md](./2026-04-09_phase-11_migration-cutover.md) |
 | 2026-04-09 | Phase 10 | Operations layer (healthcheck + sweeper + rollup + verify_units) | `5d83842` | Completed | [2026-04-09_phase-10_operations.md](./2026-04-09_phase-10_operations.md) |
 | 2026-04-09 | Phase 9 | Notifier layer (Telegram routing + `notification_log` + smoke tests) | `9246314` | Completed | [2026-04-09_phase-9_notifier.md](./2026-04-09_phase-9_notifier.md) |
 | 2026-04-09 | Phase 8 | API layer (FastAPI routes, auth, async orchestration, HTTP smoke) | `716fde9` | Completed | [2026-04-09_phase-8_api-fastapi.md](./2026-04-09_phase-8_api-fastapi.md) |
-| 2026-04-09 | Phase 7 | AI Audit (CrewAI) sequential flow + cache/force + usage telemetry | `pending` | In progress | [2026-04-09_phase-7_audit-crewai.md](./2026-04-09_phase-7_audit-crewai.md) |
-| 2026-04-09 | Phase 6 | Knowledge Base (markdown indexing + PostgreSQL FTS lookup + cache) | `pending` | In progress | [2026-04-09_phase-6_knowledge-base.md](./2026-04-09_phase-6_knowledge-base.md) |
-| 2026-04-09 | Phase 4.5 | Pre-flight hardening (CI postgres + DLQ + normalize lock) | `pending` | Completed | [2026-04-09_phase-4.5_hardening.md](./2026-04-09_phase-4.5_hardening.md) |
-| 2026-04-08 | Phase 4 | Normalize layer (raw_tasks -> tasks_normalized) | `pending` | Completed | [2026-04-08_phase-4_normalize.md](./2026-04-08_phase-4_normalize.md) |
+| 2026-04-09 | Phase 7 | AI Audit (CrewAI) sequential flow + cache/force + usage telemetry | `historical` | Completed | [2026-04-09_phase-7_audit-crewai.md](./2026-04-09_phase-7_audit-crewai.md) |
+| 2026-04-09 | Phase 6 | Knowledge Base (markdown indexing + PostgreSQL FTS lookup + cache) | `historical` | Completed | [2026-04-09_phase-6_knowledge-base.md](./2026-04-09_phase-6_knowledge-base.md) |
+| 2026-04-09 | Phase 4.5 | Pre-flight hardening (CI postgres + DLQ + normalize lock) | `historical` | Completed | [2026-04-09_phase-4.5_hardening.md](./2026-04-09_phase-4.5_hardening.md) |
+| 2026-04-08 | Phase 4 | Normalize layer (raw_tasks -> tasks_normalized) | `historical` | Completed | [2026-04-08_phase-4_normalize.md](./2026-04-08_phase-4_normalize.md) |
 | 2026-04-08 | Phase 3 | Parse layer (sheet_cells -> raw_tasks) | `e0a33bf` | Completed | [2026-04-08_phase-3_parse.md](./2026-04-08_phase-3_parse.md) |
 | 2026-04-08 | Phase 2 | Ingest layer (Google Sheets -> sheet_cells) | `ea4c926` | Completed | [2026-04-08_phase-2_ingest-sheet-cells.md](./2026-04-08_phase-2_ingest-sheet-cells.md) |
 | 2026-04-08 | Phase 1 | Core infrastructure (config/common/db/alembic baseline) | `566fe8d` | Completed | [2026-04-08_phase-1_core-infrastructure.md](./2026-04-08_phase-1_core-infrastructure.md) |

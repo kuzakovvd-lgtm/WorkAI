@@ -17,12 +17,16 @@ Status date: 2026-04-10
 | 8 | API layer | Done | FastAPI endpoints with auth, health, tasks, analysis, team, and debug routes |
 | 9 | Notifier | Done | Telegram alerts by severity, resilient send path, and `notification_log` contract |
 | 10 | Ops layer | Done | Healthcheck/sweepers/rollups and operational validation tooling |
-| 11 | Safe production launch of v2 | In progress | v2 launch safety gate without dependency on v1 baseline |
-| 12 | Hardening | In progress | Coverage >=70%, strict static checks, docs/perf/DR hardening |
+| 11 | Safe production launch of v2 (re-scoped) | Done | v2 launch safety gate without dependency on v1 baseline |
+| 12 | Hardening | Done | Coverage >=70%, strict static checks, docs/perf/DR hardening |
 
 ## Current focus
 
-Phase 12 hardening pass (coverage + static analysis + docs/perf/DR).
+Post-hardening operational discipline:
+
+- keep production and integration DB separation enforced;
+- maintain docs/runbook consistency with real runtime state;
+- monitor health/audit/notifier signals and rotate temporary secrets.
 
 ## Confirmed v2 baseline
 

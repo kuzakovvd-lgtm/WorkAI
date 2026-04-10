@@ -28,6 +28,13 @@ contracts and introduces deployment/runbook artifacts only.
 Hardening phase (12) adds no new DB tables; it raises quality gates
 (coverage/static checks/docs/perf/DR readiness) on top of existing contracts.
 
+Runtime environment note:
+
+- production runtime database is isolated from integration smoke database;
+- server references:
+  - `/etc/workai/secrets/db.env` -> production DB (`workai_v2_test`),
+  - `/etc/workai/secrets/db.test.env` -> integration DB (`workai_v2_integration`).
+
 ### `sheet_cells` (ingest -> parse contract)
 
 - Purpose: raw cell-level snapshot loaded from Google Sheets bounded ranges.

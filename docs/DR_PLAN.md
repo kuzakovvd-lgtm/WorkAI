@@ -10,6 +10,7 @@ to previous deploy revision.
 - Access to DB credentials (`WORKAI_DB__DSN` or equivalent secure secret file).
 - Access to backup storage with retention policy.
 - Access to deployment repository branch `Itogmain`.
+- Clear distinction between runtime DB env (`db.env`) and integration DB env (`db.test.env`).
 
 ## Backup procedure
 
@@ -87,3 +88,9 @@ Recommended cadence:
   - restore duration,
   - validation duration,
   - incidents and remediation.
+
+Current server policy:
+
+- runtime DB: `workai_v2_test`;
+- isolated integration DB: `workai_v2_integration`;
+- restore drills must target isolated/non-production DB first.

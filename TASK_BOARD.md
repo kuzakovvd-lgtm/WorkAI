@@ -19,24 +19,24 @@ Policy: every non-trivial iteration must update this board together with
 - [x] Phase 8 API layer (FastAPI routes + auth + integration smoke).
 - [x] Phase 9 notifier layer (Telegram alerts + notification_log).
 - [x] Phase 10 ops layer (healthcheck + stale sweeper + cost rollup + verify_units).
+- [x] Phase 11 re-scoped safe production launch artifacts and runtime launch validation.
+- [x] Phase 12 hardening (coverage/static/docs/perf/DR).
+- [x] Baseline documentation + force-path hotfix verification.
+- [x] Integration smoke isolation on dedicated DB (`workai_v2_integration`).
 
 ## In progress
 
-- [ ] Phase 11 safe production launch of v2 (cutover gating + readiness checks).
-- [ ] Phase 12 hardening (coverage/static/docs/perf/DR).
-- [ ] Baseline documentation + force-path hotfix verification.
+- [ ] Ongoing production operations and observability discipline (no new roadmap phase).
 
 ## Next
 
-- [ ] Finalize Phase 11 launch observation evidence.
-- [ ] Finalize Phase 12 CI evidence with hardened checks.
-- [ ] Publish final production readiness summary.
+- [ ] Rotate temporary runtime secrets used during bring-up/testing.
 - [ ] Keep weekly-board parse coverage/tests aligned with real connected sheets.
+- [ ] Keep integration DB smoke in CI and server runbook routine.
 
 ## Backlog
 
-- [ ] Phase 11 decision tracking (waived v1-alignment criteria + accepted risks).
-- [ ] Phase 12 hardening preparation.
+- [ ] Incremental ops automation improvements (non-breaking, outside closed phases).
 
 ## Phase 11 Decision Log
 

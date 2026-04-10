@@ -2,7 +2,7 @@
 
 Employee quality & audit system — v2 modular rewrite.
 
-**Status:** Phase 12 — Hardening.
+**Status:** Phases 0-12 completed (Phase 11 re-scoped to v2-first launch model).
 
 ## Production baseline snapshot (2026-04-10)
 
@@ -22,6 +22,12 @@ Baseline counters captured on connected sources:
 - `daily_task_assessments = 39`
 - `operational_cycles = 39`
 - `audit_runs = 4`
+
+Runtime DB separation (server):
+
+- production runtime DB: `workai_v2_test` (`/etc/workai/secrets/db.env`);
+- isolated integration DB: `workai_v2_integration` (`/etc/workai/secrets/db.test.env`);
+- integration smoke runs must use integration DB only.
 
 Historical note:
 
@@ -300,7 +306,7 @@ python scripts/run_verify_units.py --unit-dir /etc/systemd/system
 - `1` -> data_warning
 - `2` -> infra_critical
 
-## Migration & Cutover (Phase 11)
+## Migration & Cutover (Phase 11, re-scoped)
 
 Phase 11 is officially re-scoped to **v2-first safe production launch**.
 
@@ -330,10 +336,11 @@ python scripts/run_parallel_diff.py \
 Canonical production path policy:
 
 - target: `/opt/workai`
-- current legacy dev path may still be `/opt/WorkAI` during transition.
+- compatibility symlink in runtime: `/opt/workai -> /opt/WorkAI`.
+- legacy v1 stack is removed from active server runtime.
 - see `CUTOVER.md` for alignment and rollback procedure.
 
-## Hardening (Phase 12)
+## Hardening (Phase 12, completed)
 
 Phase 12 focuses on quality and operational hardening without adding new product
 features.
@@ -353,6 +360,7 @@ python scripts/run_phase12_benchmarks.py --rows 200 --cols 40 --sheets 3
 Disaster recovery plan:
 
 - see `docs/DR_PLAN.md`.
+- final consolidated system state: `docs/FINAL_PROJECT_DOSSIER.md`.
 
 ## Project structure
 
@@ -386,7 +394,9 @@ Detailed implementation logs for each phase are stored in
 
 ## Documentation index
 
-Use `DOCS_INDEX.md` as the single entry point for project context.
+Use `DOCS_INDEX.md` as the root entry point and `docs/README.md` as the docs
+sub-index. Final consolidated system state is in
+`docs/FINAL_PROJECT_DOSSIER.md`.
 
 ## License
 

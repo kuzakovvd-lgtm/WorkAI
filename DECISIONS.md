@@ -191,3 +191,28 @@ This file stores short ADR-style entries.
 - Consequences:
   - force-path no longer masks primary errors with pool lifecycle exceptions;
   - failed-run observability in `audit_runs` is preserved even when pool closure happens mid-run.
+
+## ADR-0021: Server integration tests must run on isolated database
+
+- Status: Accepted
+- Date: 2026-04-10
+- Context: Running `pytest -m integration` against runtime DB causes flaky results due to existing production-like state.
+- Decision:
+  - keep runtime DB in `/etc/workai/secrets/db.env` (`workai_v2_test`);
+  - use dedicated integration DB via `/etc/workai/secrets/db.test.env` (`workai_v2_integration`);
+  - require integration smoke to load `db.test.env` explicitly.
+- Consequences:
+  - integration smoke is deterministic and does not mutate runtime production-like state;
+  - operational runtime remains isolated from test churn.
+
+## ADR-0022: Final project dossier as canonical operational summary
+
+- Status: Accepted
+- Date: 2026-04-10
+- Context: Project reached full phase completion and needed one authoritative, consolidated operational document.
+- Decision:
+  - maintain `docs/FINAL_PROJECT_DOSSIER.md` as canonical final summary of architecture, runtime, contracts, operations, and accepted risks;
+  - keep core docs (`README`, `RUNBOOK`, `ROADMAP`, `TASK_BOARD`, `ARCHITECTURE`) synchronized with the dossier.
+- Consequences:
+  - onboarding and audits get one source of truth for real project state;
+  - contradictions across distributed docs are reduced.

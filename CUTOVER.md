@@ -1,5 +1,7 @@
 # WorkAI v2 Launch Plan (Phase 11)
 
+Status: **Completed under re-scoped Phase 11 model**.
+
 ## Decision
 
 Phase 11 is re-scoped from "migration from working v1 to v2" to
@@ -91,4 +93,4 @@ Rollback target is **previous known-good v2 deploy**, not v1.
 ## Notes
 
 - This runbook is intentionally non-destructive.
-- Legacy v1 decommissioning remains out of scope.
+- Legacy v1 runtime was removed during v2-first launch cleanup; rollback target remains previous v2 deploy + DB snapshot.

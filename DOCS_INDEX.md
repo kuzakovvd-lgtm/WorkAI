@@ -6,6 +6,7 @@ Start here if you are a new engineer or coding agent.
 
 - [PROJECT_BRIEF.md](./PROJECT_BRIEF.md) — what the product is, for whom, and success metrics.
 - [DOMAIN_GLOSSARY.md](./DOMAIN_GLOSSARY.md) — shared terms and entities.
+- [docs/FINAL_PROJECT_DOSSIER.md](./docs/FINAL_PROJECT_DOSSIER.md) — final consolidated project and runtime state.
 
 ## 2) Architecture and contracts
 
@@ -22,4 +23,5 @@ Start here if you are a new engineer or coding agent.
 ## 4) Operations and contribution
 
 - [RUNBOOK.md](./RUNBOOK.md) — local/server run, migrations, smoke checks, incident basics.
+- [docs/DR_PLAN.md](./docs/DR_PLAN.md) — backup/restore and drill readiness.
 - [CONTRIBUTING_AI.md](./CONTRIBUTING_AI.md) — rules for AI-assisted implementation.

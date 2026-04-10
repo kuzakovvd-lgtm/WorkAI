@@ -40,6 +40,16 @@ mypy WorkAI
 pytest
 ```
 
+Server integration verification (isolated DB):
+
+```bash
+set -a
+source /etc/workai/secrets/db.test.env
+source /etc/workai/secrets/api.env
+set +a
+pytest -q -m integration
+```
+
 ## Database environment
 
 Required minimum:
@@ -53,6 +63,12 @@ Optional pool tuning:
 - `WORKAI_DB__MAX_SIZE`
 - `WORKAI_DB__TIMEOUT_SEC`
 - `WORKAI_DB__CONNECT_TIMEOUT_SEC`
+
+Server DB split policy:
+
+- production runtime: `/etc/workai/secrets/db.env` -> DB `workai_v2_test`;
+- integration smoke: `/etc/workai/secrets/db.test.env` -> DB `workai_v2_integration`;
+- do not run integration smoke on production runtime DB.
 
 ## Migrations
 
