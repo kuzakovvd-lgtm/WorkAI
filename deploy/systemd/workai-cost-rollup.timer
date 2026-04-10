@@ -1,0 +1,10 @@
+[Unit]
+Description=Schedule WorkAI v2 daily cost rollup
+
+[Timer]
+OnCalendar=*-*-* 02:10:00
+Persistent=true
+Unit=workai-cost-rollup.service
+
+[Install]
+WantedBy=timers.target

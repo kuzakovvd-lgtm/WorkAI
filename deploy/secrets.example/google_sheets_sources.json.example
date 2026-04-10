@@ -1,0 +1,13 @@
+{
+  "sources": [
+    {
+      "name": "default",
+      "enabled": true,
+      "spreadsheet_id": "replace-with-spreadsheet-id",
+      "ranges": [
+        "Sheet1!A1:Z200",
+        "Sheet2!A1:Z200"
+      ]
+    }
+  ]
+}

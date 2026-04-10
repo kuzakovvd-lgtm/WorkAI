@@ -1,0 +1,10 @@
+[Unit]
+Description=Schedule WorkAI v2 healthcheck
+
+[Timer]
+OnCalendar=*:0/10
+Persistent=true
+Unit=workai-healthcheck.service
+
+[Install]
+WantedBy=timers.target

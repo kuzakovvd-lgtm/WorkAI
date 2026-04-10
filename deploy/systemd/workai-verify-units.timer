@@ -1,0 +1,10 @@
+[Unit]
+Description=Schedule WorkAI v2 verify units
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+Unit=workai-verify-units.service
+
+[Install]
+WantedBy=timers.target

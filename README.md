@@ -2,7 +2,7 @@
 
 Employee quality & audit system — v2 modular rewrite.
 
-**Status:** Phase 10 — Operations layer.
+**Status:** Phase 12 — Hardening.
 
 ## What it does
 
@@ -274,6 +274,60 @@ python scripts/run_verify_units.py --unit-dir /etc/systemd/system
 - `0` -> info/ok
 - `1` -> data_warning
 - `2` -> infra_critical
+
+## Migration & Cutover (Phase 11)
+
+Phase 11 is officially re-scoped to **v2-first safe production launch**.
+
+Decision summary:
+
+- original v1-migration criteria are waived by explicit project decision;
+- validation no longer depends on v1 alignment gates;
+- rollback target is previous v2 deploy/DB snapshot, not v1 runtime.
+
+Phase 11 now focuses on reproducible v2 launch artifacts:
+
+- `deploy/systemd/workai-*.service` and `workai-*.timer` templates
+- production secrets contract in `deploy/secrets.example/`
+- launch/readiness helpers and runbook
+- cutover readiness checker and runbook
+
+Run migration helpers:
+
+```bash
+python scripts/run_cutover_readiness.py
+python scripts/run_parallel_diff.py \
+  --date 2026-04-09 \
+  --reference-json /tmp/workai-launch-baseline-counts-2026-04-09.json \
+  --tolerance-pct 5
+```
+
+Canonical production path policy:
+
+- target: `/opt/workai`
+- current legacy dev path may still be `/opt/WorkAI` during transition.
+- see `CUTOVER.md` for alignment and rollback procedure.
+
+## Hardening (Phase 12)
+
+Phase 12 focuses on quality and operational hardening without adding new product
+features.
+
+Main checks:
+
+```bash
+scripts/run_phase12_hardening_checks.sh
+```
+
+Performance baseline generation:
+
+```bash
+python scripts/run_phase12_benchmarks.py --rows 200 --cols 40 --sheets 3
+```
+
+Disaster recovery plan:
+
+- see `docs/DR_PLAN.md`.
 
 ## Project structure
 

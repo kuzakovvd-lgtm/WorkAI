@@ -10,7 +10,7 @@ Database schema is the formal contract between modules.
 - All modules may depend on `db`, `config`, `common`.
 - Reverse/circular imports across domain modules are forbidden.
 
-## Current contract state (Phase 2/3/4.5/5.4/6/7/9/10)
+## Current contract state (Phase 2/3/4.5/5.4/6/7/9/10/11/12)
 
 - Alembic chain: `0001_baseline` -> `0002_sheet_cells` -> `0003_raw_tasks` -> `0004_tasks_normalized` -> `0005_pipeline_errors` -> `0006_employee_daily_ghost_time` -> `0007_tasks_norm_contract` -> `0008_daily_task_assess` -> `0009_tasks_norm_time_source` -> `0010_operational_cycles` -> `0011_dynamic_task_norms` -> `0012_knowledge_base_articles` -> `0013_audit_tables` -> `0014_notification_log`.
 - Runtime DB access goes through `WorkAI.db` helpers and explicit `init_db()`.
@@ -21,6 +21,12 @@ Ops phase (10) adds no new DB tables; it operates on existing contracts:
 - `raw_tasks` / `tasks_normalized` (health volume/freshness checks),
 - `pipeline_errors` (health signal surface),
 - `notification_log` (downstream notifier observability).
+
+Migration/Cutover phase (11) adds no new DB tables; it relies on existing
+contracts and introduces deployment/runbook artifacts only.
+
+Hardening phase (12) adds no new DB tables; it raises quality gates
+(coverage/static checks/docs/perf/DR readiness) on top of existing contracts.
 
 ### `sheet_cells` (ingest -> parse contract)
 

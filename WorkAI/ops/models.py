@@ -1,4 +1,4 @@
-"""Ops result models for healthcheck, sweeper, rollup and unit verification."""
+"""Ops result models for healthcheck, sweeper, rollup, unit verification and cutover."""
 
 from __future__ import annotations
 
@@ -77,4 +77,42 @@ class VerifyUnitsResult:
     units_checked: int
     units: list[UnitCheckResult]
     severity: Severity
+    generated_at: datetime
+
+
+@dataclass(frozen=True)
+class ParallelDiffItem:
+    """One table-level difference item for v1/v2 parallel-run check."""
+
+    table: str
+    reference_count: int
+    candidate_count: int
+    delta: int
+    delta_pct: float
+    within_tolerance: bool
+
+
+@dataclass(frozen=True)
+class ParallelDiffResult:
+    """Parallel-run comparison output for one target date."""
+
+    target_date: date
+    tolerance_pct: float
+    reference_counts: dict[str, int]
+    candidate_counts: dict[str, int]
+    diffs: list[ParallelDiffItem]
+    violations: list[str]
+    generated_at: datetime
+
+
+@dataclass(frozen=True)
+class CutoverReadinessResult:
+    """Cutover readiness checklist result."""
+
+    status: Literal["ready", "risky", "blocked"]
+    canonical_path: str
+    current_path: str
+    checks: list[CheckResult]
+    blockers: list[str]
+    residual_risks: list[str]
     generated_at: datetime

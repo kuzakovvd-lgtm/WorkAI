@@ -280,5 +280,92 @@ python scripts/run_verify_units.py --unit-dir /etc/systemd/system
 
 ## Server path conventions
 
-- v2: `/opt/WorkAI`
+- v2 canonical: `/opt/workai`
+- v2 current transitional path in some hosts: `/opt/WorkAI`
 - v1 (do not modify): `/opt/employee-analytics`
+
+## Migration & cutover (Phase 11)
+
+### Decision
+
+Phase 11 is executed as **safe production launch of v2**.
+
+### Reason
+
+Original Phase 11 assumed a working v1 baseline for parallel comparison and rollback.
+That assumption is not valid in current project reality, so v1-alignment gates are waived.
+
+### Accepted risks
+
+- no mandatory 7-day v1/v2 parallel run;
+- no mandatory `>=95%` alignment versus v1;
+- no rollback dependency on v1 runtime.
+
+### New acceptance criteria
+
+- deployment path/unit/secrets contracts are ready;
+- cutover/rollback runbook is ready;
+- healthcheck is green for a defined observation window after launch;
+- smoke pipeline checks pass post-launch;
+- rollback/restore path points to previous deploy + DB snapshot.
+
+### Readiness check
+
+```bash
+python scripts/run_cutover_readiness.py
+echo $?
+```
+
+- `0` -> ready
+- `1` -> risky (no blockers, residual risks remain)
+- `2` -> blocked
+
+Optional post-launch count sanity (v2 snapshots, not v1 baseline):
+
+```bash
+python scripts/run_parallel_diff.py \
+  --date 2026-04-09 \
+  --reference-json /tmp/workai-launch-baseline-counts-2026-04-09.json \
+  --tolerance-pct 5
+```
+
+Systemd templates:
+
+- located at `deploy/systemd/workai-*.service` and `deploy/systemd/workai-*.timer`
+- `ExecStart` points only to `/opt/workai/scripts/*.py`
+- secrets are injected via `/etc/workai/secrets/*.env`
+
+Cutover and rollback procedure:
+
+- see `CUTOVER.md` for exact ordered steps, hold period, and rollback sequence.
+
+## Hardening run (Phase 12)
+
+Full hardening checks:
+
+```bash
+scripts/run_phase12_hardening_checks.sh
+```
+
+Manual split:
+
+```bash
+ruff check .
+ruff check . --select TRY,BLE,S,DTZ,PERF --ignore BLE001,S101,S105,S108,S310,S311,S324,S608,TRY003,TRY300,TRY301,TRY004,DTZ007,DTZ011,PERF401
+mypy WorkAI
+WORKAI_DB__DSN=postgresql://postgres:postgres@localhost:5432/postgres pytest -q --cov=WorkAI --cov-report=term --cov-report=xml
+```
+
+Performance baseline:
+
+```bash
+python scripts/run_phase12_benchmarks.py --rows 200 --cols 40 --sheets 3
+```
+
+Generated artifact:
+
+- `docs/perf/phase12_baseline_<YYYY-MM-DD>.md`
+
+Disaster recovery:
+
+- see `docs/DR_PLAN.md` for backup/restore commands and validation checklist.

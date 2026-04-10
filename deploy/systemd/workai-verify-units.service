@@ -1,0 +1,12 @@
+[Unit]
+Description=WorkAI v2 verify systemd units
+After=network.target
+
+[Service]
+Type=oneshot
+User=workai
+Group=workai
+WorkingDirectory=/opt/workai
+EnvironmentFile=/etc/workai/secrets/db.env
+EnvironmentFile=/etc/workai/secrets/workai.env
+ExecStart=/opt/workai/.venv/bin/python /opt/workai/scripts/run_verify_units.py --unit-dir /etc/systemd/system

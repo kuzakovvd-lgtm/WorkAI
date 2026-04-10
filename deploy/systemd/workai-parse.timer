@@ -1,0 +1,10 @@
+[Unit]
+Description=Schedule WorkAI v2 parse
+
+[Timer]
+OnCalendar=*:2/15
+Persistent=true
+Unit=workai-parse.service
+
+[Install]
+WantedBy=timers.target

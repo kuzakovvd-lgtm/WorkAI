@@ -110,6 +110,7 @@ source = ["WorkAI"]
 branch = true
 
 [tool.coverage.report]
+fail_under = 70
 exclude_lines = [
     "pragma: no cover",
     "raise NotImplementedError",

@@ -138,3 +138,31 @@ This file stores short ADR-style entries.
   - prefetch operational cycles and assess metrics once before Crew kickoff and pass through `inputs`;
   - reporter-only `MethodologyLookupTool` is enabled conditionally when `ghost_time_hours >= 4.0`.
 - Consequences: deterministic, lower-overhead audit runs and reduced duplicate I/O during sequential agent execution.
+
+## ADR-0017: Phase 11 re-scoped from v1 migration to v2-first safe launch
+
+- Status: Accepted
+- Date: 2026-04-10
+- Context: Original Phase 11 required 7-day v1/v2 parallel run, >=95% alignment to v1, and rollback to working v1. In current project state, v1 is not a stable production baseline.
+- Decision:
+  - waive v1-dependent acceptance gates;
+  - redefine Phase 11 as safe production launch enablement for v2;
+  - use v2-centric readiness checks (health/smoke, deploy artifacts, rollback to previous deploy/snapshot).
+- Consequences:
+  - migration criteria are explicit and realistic for current operations;
+  - historical parity with v1 is no longer a release gate;
+  - stronger emphasis on backup/restore discipline and launch observation window.
+
+## ADR-0018: Phase 12 hardened Ruff profile uses focused risk categories
+
+- Status: Accepted
+- Date: 2026-04-10
+- Context: Full `ruff --select ALL` produces high noise for this mature codebase (docstring/test-style/legacy exceptions), reducing hardening signal quality.
+- Decision:
+  - keep baseline `ruff check .` as mandatory quality gate;
+  - add Phase 12 hardened profile targeting risk-heavy categories:
+    - `TRY`, `BLE`, `S`, `DTZ`, `PERF`;
+  - ignore subset of known noisy/non-actionable rules (documented in runbook and hardening script).
+- Consequences:
+  - static analysis focuses on reliability/security/perf risks with actionable signal;
+  - strictness is increased without introducing broad suppression in default developer loop.

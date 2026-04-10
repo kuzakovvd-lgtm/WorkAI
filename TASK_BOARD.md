@@ -1,6 +1,6 @@
 # WorkAI Task Board
 
-Status date: 2026-04-09
+Status date: 2026-04-10
 
 Policy: every non-trivial iteration must update this board together with
 `docs/iteration-logs/` entry.
@@ -18,17 +18,42 @@ Policy: every non-trivial iteration must update this board together with
 - [x] Phase 7 AI audit layer (CrewAI sequential flow + audit_runs).
 - [x] Phase 8 API layer (FastAPI routes + auth + integration smoke).
 - [x] Phase 9 notifier layer (Telegram alerts + notification_log).
+- [x] Phase 10 ops layer (healthcheck + stale sweeper + cost rollup + verify_units).
 
 ## In progress
 
-- [ ] Phase 10 ops layer (healthcheck + stale sweeper + cost rollup + verify_units).
+- [ ] Phase 11 safe production launch of v2 (cutover gating + readiness checks).
+- [ ] Phase 12 hardening (coverage/static/docs/perf/DR).
 
 ## Next
 
-- [ ] Finalize Phase 10 validation in CI and merge.
-- [ ] Start Phase 11 migration/cutover planning.
-- [ ] Prepare ops runbook checks for scheduled execution.
+- [ ] Finalize Phase 11 launch observation evidence.
+- [ ] Finalize Phase 12 CI evidence with hardened checks.
+- [ ] Publish final production readiness summary.
 
 ## Backlog
 
-- [ ] Ops + migration/cutover hardening (Phases 10-11).
+- [ ] Phase 11 decision tracking (waived v1-alignment criteria + accepted risks).
+- [ ] Phase 12 hardening preparation.
+
+## Phase 11 Decision Log
+
+### Decision
+
+Phase 11 is re-scoped to v2-first safe production launch.
+
+### Reason
+
+v1 is not a dependable production baseline; comparison and rollback gates against v1 are not actionable quality controls.
+
+### Accepted risks
+
+- no mandatory 7-day v1/v2 parallel run;
+- no `>=95%` v1 alignment gate;
+- no rollback dependency on v1 runtime.
+
+### New acceptance criteria
+
+- v2 launch safety artifacts ready;
+- cutover and rollback-to-previous-deploy runbook ready;
+- health/smoke validation window defined and tracked.

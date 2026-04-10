@@ -1,0 +1,10 @@
+[Unit]
+Description=Schedule WorkAI v2 normalize
+
+[Timer]
+OnCalendar=*:4/15
+Persistent=true
+Unit=workai-normalize.service
+
+[Install]
+WantedBy=timers.target

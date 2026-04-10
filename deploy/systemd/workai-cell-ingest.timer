@@ -1,0 +1,10 @@
+[Unit]
+Description=Schedule WorkAI v2 ingest
+
+[Timer]
+OnCalendar=*:0/15
+Persistent=true
+Unit=workai-cell-ingest.service
+
+[Install]
+WantedBy=timers.target
