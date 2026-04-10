@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main, "phase-*"]
+    branches: [Itogmain, main, "phase-*"]
   pull_request:
-    branches: [main]
+    branches: [Itogmain, main]
 
 jobs:
   lint-and-test:
