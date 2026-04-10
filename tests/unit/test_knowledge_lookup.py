@@ -33,9 +33,6 @@ def test_lookup_cache_hits(monkeypatch) -> None:  # type: ignore[no-untyped-def]
     def fake_init_db(_settings):
         return None
 
-    def fake_close_db() -> None:
-        return None
-
     @contextmanager
     def fake_connection_cm():
         yield _DummyConn()
@@ -56,7 +53,6 @@ def test_lookup_cache_hits(monkeypatch) -> None:  # type: ignore[no-untyped-def]
 
     monkeypatch.setattr(lookup, "get_settings", fake_get_settings)
     monkeypatch.setattr(lookup, "init_db", fake_init_db)
-    monkeypatch.setattr(lookup, "close_db", fake_close_db)
     monkeypatch.setattr(lookup, "connection", fake_connection_cm)
     monkeypatch.setattr(lookup, "lookup_articles", fake_lookup_articles)
 
