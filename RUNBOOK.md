@@ -26,11 +26,16 @@ Baseline caveat history:
 ## Local setup
 
 ```bash
-python3.12 -m venv .venv
+./scripts/bootstrap_dev.sh
 source .venv/bin/activate
-pip install --upgrade pip
-pip install -e ".[dev]"
 ```
+
+Python version policy:
+
+- use Python `3.12.x` only for local, CI and production-like workflows;
+- local pin is tracked in `.python-version`;
+- package guard is enforced via `requires-python = ">=3.12,<3.13"` in
+  `pyproject.toml`.
 
 ## Standard verification
 

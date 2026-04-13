@@ -46,7 +46,7 @@ separately by the project owner.
 
 ## Requirements
 
-- Python 3.12+
+- Python 3.12.x (required)
 - PostgreSQL 15+
 - Linux (systemd for production deployment)
 
@@ -55,10 +55,8 @@ separately by the project owner.
 ```bash
 git clone https://github.com/kuzakovvd-lgtm/WorkAI.git
 cd WorkAI
-python3.12 -m venv .venv
+./scripts/bootstrap_dev.sh
 source .venv/bin/activate
-pip install --upgrade pip
-pip install -e ".[dev]"
 
 # Verify
 python -c "import WorkAI; print(WorkAI.__version__)"
@@ -66,6 +64,13 @@ ruff check .
 mypy WorkAI
 pytest -q -m "not integration and not integration_online"
 ```
+
+Version policy:
+
+- canonical interpreter: Python `3.12.x` in dev/CI/prod workflows;
+- repo pin: `.python-version`;
+- package constraint: `requires-python = ">=3.12,<3.13"` in
+  `pyproject.toml`.
 
 ## Database & migrations (Phase 1)
 

@@ -6,6 +6,17 @@ RUFF_BIN="${RUFF_BIN:-/tmp/workai-py312/bin/ruff}"
 MYPY_BIN="${MYPY_BIN:-/tmp/workai-py312/bin/mypy}"
 PYTEST_BIN="${PYTEST_BIN:-/tmp/workai-py312/bin/pytest}"
 
+echo "[phase12] verify python version (3.12.x)"
+"${PYTHON_BIN}" - <<'PY'
+import sys
+
+if sys.version_info[:2] != (3, 12):
+    raise SystemExit(
+        f"Python 3.12.x is required for hardening checks, got {sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+    )
+print(f"python={sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}")
+PY
+
 echo "[phase12] ruff standard"
 "${RUFF_BIN}" check .
 

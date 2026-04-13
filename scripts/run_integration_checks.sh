@@ -3,11 +3,27 @@ set -euo pipefail
 
 PYTEST_BIN="${PYTEST_BIN:-pytest}"
 ALEMBIC_BIN="${ALEMBIC_BIN:-alembic}"
+PYTHON_BIN="${PYTHON_BIN:-python3.12}"
 DB_ENV_FILE="${DB_ENV_FILE:-/etc/workai/secrets/db.test.env}"
 GOOGLE_ENV_FILE="${GOOGLE_ENV_FILE:-/etc/workai/secrets/google_sheets.test.env}"
 MARK_EXPR="${WORKAI_PYTEST_MARK_EXPR:-integration}"
 
 require_flags=(--require-integration-env)
+
+if ! command -v "${PYTHON_BIN}" >/dev/null 2>&1; then
+  echo "Required interpreter '${PYTHON_BIN}' not found. Install Python 3.12 first."
+  exit 1
+fi
+
+"${PYTHON_BIN}" - <<'PY'
+import sys
+
+if sys.version_info[:2] != (3, 12):
+    raise SystemExit(
+        f"Python 3.12.x is required for integration checks, got {sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+    )
+print(f"integration python={sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}")
+PY
 
 if [[ ! -f "${DB_ENV_FILE}" ]]; then
   echo "Missing DB integration env file: ${DB_ENV_FILE}"

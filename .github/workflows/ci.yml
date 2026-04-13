@@ -1,5 +1,8 @@
 name: CI
 
+env:
+  WORKAI_PYTHON_VERSION: "3.12"
+
 on:
   push:
     branches: [Itogmain, main, "phase-*"]
@@ -17,8 +20,16 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: ${{ env.WORKAI_PYTHON_VERSION }}
           cache: "pip"
+
+      - name: Verify Python version
+        run: |
+          python - <<'PY'
+          import sys
+          assert sys.version_info[:2] == (3, 12), f"Expected Python 3.12.x, got {sys.version}"
+          print(sys.version)
+          PY
 
       - name: Install dependencies
         run: |
@@ -64,8 +75,16 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: ${{ env.WORKAI_PYTHON_VERSION }}
           cache: "pip"
+
+      - name: Verify Python version
+        run: |
+          python - <<'PY'
+          import sys
+          assert sys.version_info[:2] == (3, 12), f"Expected Python 3.12.x, got {sys.version}"
+          print(sys.version)
+          PY
 
       - name: Install dependencies
         run: |
@@ -170,8 +189,16 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: ${{ env.WORKAI_PYTHON_VERSION }}
           cache: "pip"
+
+      - name: Verify Python version
+        run: |
+          python - <<'PY'
+          import sys
+          assert sys.version_info[:2] == (3, 12), f"Expected Python 3.12.x, got {sys.version}"
+          print(sys.version)
+          PY
 
       - name: Validate required Google integration secrets
         run: |
