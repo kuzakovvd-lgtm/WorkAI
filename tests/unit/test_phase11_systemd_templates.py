@@ -24,8 +24,11 @@ def test_systemd_templates_use_scripts_only_execstart() -> None:
         parser.read(path, encoding="utf-8")
 
         exec_start = parser.get("Service", "ExecStart")
+        working_dir = parser.get("Service", "WorkingDirectory")
         assert "/opt/workai/scripts/" in exec_start
+        assert "/opt/WorkAI" not in exec_start
         assert "/opt/employee-analytics" not in exec_start
+        assert working_dir == "/opt/workai"
 
         script_token = next(token for token in exec_start.split() if token.startswith("/opt/workai/scripts/"))
         repo_script_path = Path("scripts") / Path(script_token).name

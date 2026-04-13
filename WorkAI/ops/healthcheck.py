@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, date, datetime, timedelta
+from pathlib import Path
 
 from psycopg import Cursor
 
@@ -86,7 +87,7 @@ def run_healthcheck(
     # Data freshness checks
     if db_ok and pool_ok:
         with connection() as conn, conn.cursor() as cur:
-            checks.extend(_freshness_checks(cur))
+            checks.extend(_freshness_checks(cur, unit_dir=unit_dir))
             checks.extend(_data_volume_checks(cur, today))
             checks.extend(_audit_error_rate_checks(cur, today))
 
@@ -150,18 +151,29 @@ def healthcheck_exit_code(severity: Severity) -> int:
     raise ConfigError(f"Unsupported severity: {severity}")
 
 
-def _freshness_checks(cur: Cursor[object]) -> list[CheckResult]:
+def _freshness_checks(cur: Cursor[object], *, unit_dir: str) -> list[CheckResult]:
     now = datetime.now(UTC)
-    max_age = timedelta(hours=48)
+    default_max_age = timedelta(hours=48)
     checks: list[CheckResult] = []
 
-    fresh_targets = [
-        ("raw_tasks", "parsed_at"),
-        ("tasks_normalized", "normalized_at"),
-        ("audit_runs", "started_at"),
+    fresh_targets: list[tuple[str, str, timedelta]] = [
+        ("raw_tasks", "parsed_at", default_max_age),
+        ("tasks_normalized", "normalized_at", default_max_age),
     ]
+    if _has_scheduled_audit_timer(unit_dir):
+        fresh_targets.append(("audit_runs", "started_at", timedelta(days=7)))
+    else:
+        checks.append(
+            CheckResult(
+                name="freshness_audit_runs",
+                status="not_applicable",
+                severity="info",
+                message="audit_runs freshness skipped: audit timer is not configured",
+                details={"unit_dir": unit_dir, "expected_timer": "workai-audit.timer"},
+            )
+        )
 
-    for table_name, column_name in fresh_targets:
+    for table_name, column_name, max_age in fresh_targets:
         value = fetch_table_max_timestamp(cur, table_name, column_name)
         if value is None:
             checks.append(
@@ -193,7 +205,7 @@ def _freshness_checks(cur: Cursor[object]) -> list[CheckResult]:
                     status="ok",
                     severity="info",
                     message=f"{table_name} freshness is within threshold",
-                    details={"max_age_hours": 48, "age_hours": round(age.total_seconds() / 3600, 2)},
+                    details={"max_age_hours": round(max_age.total_seconds() / 3600, 2), "age_hours": round(age.total_seconds() / 3600, 2)},
                 )
             )
         else:
@@ -203,11 +215,15 @@ def _freshness_checks(cur: Cursor[object]) -> list[CheckResult]:
                     status="warning",
                     severity="data_warning",
                     message=f"{table_name} data is stale",
-                    details={"max_age_hours": 48, "age_hours": round(age.total_seconds() / 3600, 2)},
+                    details={"max_age_hours": round(max_age.total_seconds() / 3600, 2), "age_hours": round(age.total_seconds() / 3600, 2)},
                 )
             )
 
     return checks
+
+
+def _has_scheduled_audit_timer(unit_dir: str) -> bool:
+    return (Path(unit_dir) / "workai-audit.timer").exists()
 
 
 def _data_volume_checks(cur: Cursor[object], target_date: date) -> list[CheckResult]:

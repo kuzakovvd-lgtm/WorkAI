@@ -62,10 +62,12 @@ class UnitCheckResult:
 
     unit_name: str
     execstart: str
+    working_directory: str | None
     interpreter_path: str | None
     script_path: str | None
     interpreter_exists: bool
     script_exists: bool
+    path_policy_ok: bool
     status: Literal["ok", "warning", "critical"]
 
 

@@ -311,6 +311,7 @@ python scripts/run_healthcheck.py --unit-dir /etc/systemd/system
 python scripts/run_stale_sweeper.py --threshold-minutes 15
 python scripts/run_cost_rollup.py --date 2026-04-09
 python scripts/run_verify_units.py --unit-dir /etc/systemd/system
+python scripts/run_timer_chain_check.py --window-hours 24
 ```
 
 `run_healthcheck.py` exit codes:

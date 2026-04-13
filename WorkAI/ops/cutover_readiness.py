@@ -13,6 +13,7 @@ from WorkAI.ops.models import CheckResult, CutoverReadinessResult
 
 _CANONICAL_PATH = "/opt/workai"
 _CURRENT_PATH = "/opt/workai"
+_FORBIDDEN_PATH_PREFIXES = ("/opt/WorkAI", "/opt/employee-analytics")
 _CUTOVER_EVIDENCE_FILE = "docs/cutover/cutover_readiness_evidence.json"
 
 _REQUIRED_SYSTEMD_FILES = [
@@ -191,8 +192,14 @@ def _validate_systemd_templates(systemd_dir: Path) -> list[str]:
             continue
         if "/opt/workai/scripts/" not in exec_start:
             issues.append(f"{unit_name}: ExecStart must target /opt/workai/scripts/*.py")
-        if "/opt/employee-analytics" in exec_start:
-            issues.append(f"{unit_name}: ExecStart must not point to v1 paths")
+        if any(path in exec_start for path in _FORBIDDEN_PATH_PREFIXES):
+            issues.append(f"{unit_name}: ExecStart must not use legacy runtime paths")
+
+        working_dir = parser.get("Service", "WorkingDirectory", fallback="")
+        if working_dir == "":
+            issues.append(f"{unit_name}: missing Service.WorkingDirectory")
+        elif working_dir != _CANONICAL_PATH:
+            issues.append(f"{unit_name}: WorkingDirectory must be {_CANONICAL_PATH}")
 
         env_files = parser.get("Service", "EnvironmentFile", fallback="")
         if env_files == "":

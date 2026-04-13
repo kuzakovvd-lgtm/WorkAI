@@ -43,6 +43,9 @@ jobs:
       - name: Mypy
         run: mypy WorkAI
 
+      - name: Cutover path-policy check
+        run: python scripts/run_cutover_readiness.py
+
       - name: Pytest
         run: pytest -q -m "not integration and not integration_online"
 

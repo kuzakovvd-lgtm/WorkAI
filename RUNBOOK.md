@@ -322,6 +322,12 @@ Verify systemd unit ExecStart paths:
 python scripts/run_verify_units.py --unit-dir /etc/systemd/system
 ```
 
+Verify timer chain and service outcomes for last 24h (systemctl + journalctl):
+
+```bash
+python scripts/run_timer_chain_check.py --window-hours 24
+```
+
 ## Server path conventions
 
 - v2 canonical: `/opt/workai`

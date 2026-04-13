@@ -13,6 +13,8 @@ from WorkAI.common import get_logger
 from WorkAI.ops.models import Severity, UnitCheckResult, VerifyUnitsResult
 
 _LOG = get_logger(__name__)
+_CANONICAL_RUNTIME_PATH = "/opt/workai"
+_FORBIDDEN_RUNTIME_PATHS = ("/opt/WorkAI", "/opt/employee-analytics")
 
 
 def run_verify_units(unit_dir: str = "/etc/systemd/system") -> VerifyUnitsResult:
@@ -24,13 +26,17 @@ def run_verify_units(unit_dir: str = "/etc/systemd/system") -> VerifyUnitsResult
     for unit_path in unit_paths:
         unit_name = os.path.basename(unit_path)
         execstart = _extract_execstart(unit_path)
+        working_directory = _extract_working_directory(unit_path)
         interpreter_path, script_path = _extract_paths(execstart)
+        path_policy_ok = _is_path_policy_ok(execstart, working_directory)
 
         interpreter_exists = False if interpreter_path is None else os.path.exists(interpreter_path)
         script_exists = False if script_path is None else os.path.exists(script_path)
 
         status: Literal["ok", "warning", "critical"]
-        if execstart == "" or interpreter_path is None or script_path is None:
+        if not path_policy_ok:
+            status = "critical"
+        elif execstart == "" or interpreter_path is None or script_path is None:
             status = "warning"
         elif interpreter_exists and script_exists:
             status = "ok"
@@ -41,10 +47,12 @@ def run_verify_units(unit_dir: str = "/etc/systemd/system") -> VerifyUnitsResult
             UnitCheckResult(
                 unit_name=unit_name,
                 execstart=execstart,
+                working_directory=working_directory,
                 interpreter_path=interpreter_path,
                 script_path=script_path,
                 interpreter_exists=interpreter_exists,
                 script_exists=script_exists,
+                path_policy_ok=path_policy_ok,
                 status=status,
             )
         )
@@ -126,3 +134,28 @@ def _extract_paths(execstart: str) -> tuple[str | None, str | None]:
         script = tokens[1]
 
     return (interpreter, script)
+
+
+def _extract_working_directory(unit_path: str) -> str | None:
+    try:
+        with open(unit_path, encoding="utf-8") as handle:
+            lines = handle.readlines()
+    except OSError:
+        return None
+
+    for raw in lines:
+        line = raw.strip()
+        if line.startswith("WorkingDirectory="):
+            value = line[len("WorkingDirectory=") :].strip()
+            return value or None
+    return None
+
+
+def _is_path_policy_ok(execstart: str, working_directory: str | None) -> bool:
+    if execstart == "":
+        return False
+    if working_directory != _CANONICAL_RUNTIME_PATH:
+        return False
+    if _CANONICAL_RUNTIME_PATH not in execstart:
+        return False
+    return not any(token in execstart for token in _FORBIDDEN_RUNTIME_PATHS)

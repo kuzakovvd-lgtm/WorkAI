@@ -2,7 +2,7 @@
 Description=Schedule WorkAI v2 assess daily run
 
 [Timer]
-OnCalendar=*-*-* 01:15:00
+OnCalendar=*:6/15
 Persistent=true
 Unit=workai-assess.service
 
