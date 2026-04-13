@@ -112,3 +112,23 @@ def test_analysis_start_returns_controlled_error_when_runtime_unavailable(
             "message": "CrewAI endpoint is unavailable",
         }
     }
+
+
+def test_lifespan_initializes_db_before_first_request(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("WORKAI_API_KEY", "unit-test-key")
+    monkeypatch.setenv("WORKAI_DB__DSN", "postgresql://invalid:invalid@localhost:5432/invalid")
+    get_settings.cache_clear()
+
+    from WorkAI.api import main as api_main
+
+    calls: list[str] = []
+    monkeypatch.setattr(api_main, "init_db", lambda settings: calls.append("init"))
+    monkeypatch.setattr(api_main, "close_db", lambda: calls.append("close"))
+
+    with TestClient(api_main.app) as test_client:
+        assert calls == ["init"]
+        response = test_client.get("/health")
+        assert response.status_code == 200
+
+    assert calls == ["init", "close"]
+    get_settings.cache_clear()

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import os
 from collections.abc import Awaitable, Callable
 from contextlib import asynccontextmanager
@@ -41,11 +42,11 @@ async def lifespan(_: FastAPI) -> Any:
     if configured_api_key == "":
         raise ConfigError("WORKAI_API_KEY is required to start API")
 
-    init_db(settings)
+    await asyncio.to_thread(init_db, settings)
     try:
         yield
     finally:
-        close_db()
+        await asyncio.to_thread(close_db)
 
 
 app = FastAPI(title="WorkAI API", version=_API_HEADER_VERSION, lifespan=lifespan)
