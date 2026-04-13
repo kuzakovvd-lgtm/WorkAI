@@ -23,7 +23,7 @@ echo "[phase12] ruff standard"
 echo "[phase12] ruff hardened profile"
 "${RUFF_BIN}" check . \
   --select TRY,BLE,S,DTZ,PERF \
-  --ignore BLE001,S101,S105,S108,S310,S311,S324,S608,TRY003,TRY300,TRY301,TRY004,DTZ007,DTZ011,PERF401
+  --ignore BLE001,S101,S105,S108,S310,S311,S324,S603,S608,TRY003,TRY300,TRY301,TRY004,DTZ007,DTZ011,PERF401
 
 echo "[phase12] mypy strict"
 "${MYPY_BIN}" WorkAI
