@@ -9,5 +9,5 @@ Group=workai
 WorkingDirectory=/opt/workai
 EnvironmentFile=/etc/workai/secrets/db.env
 EnvironmentFile=/etc/workai/secrets/workai.env
-EnvironmentFile=/etc/workai/secrets/google_sheets.env
+EnvironmentFile=-/etc/workai/secrets/google_sheets.env
 ExecStart=/opt/workai/.venv/bin/python /opt/workai/scripts/workai_ingest.py run
