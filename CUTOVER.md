@@ -41,7 +41,7 @@ Phase 11 is re-scoped from "migration from working v1 to v2" to
 ## Path policy
 
 - Canonical v2 production path: `/opt/workai`
-- Transitional path that may exist in some environments: `/opt/WorkAI`
+- Mixed-case path variants are deprecated and must not be used.
 - v1 path (do not modify in Phase 11 docs/process): `/opt/employee-analytics`
 
 ## Preconditions before launch

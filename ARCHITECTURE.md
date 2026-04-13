@@ -66,7 +66,7 @@ Current state: **Phases 0-12 completed** (Phase 11 re-scoped to v2-first launch)
 
 ## Runtime baseline (v2-first)
 
-- Canonical runtime path: `/opt/workai` (with compatibility symlink to `/opt/WorkAI`).
+- Canonical runtime path: `/opt/workai` (single canonical path, no mixed-case aliases).
 - Active release branch: `Itogmain`.
 - Legacy v1 runtime is removed from active server operations.
 - DB split for safety:

@@ -35,7 +35,7 @@ Status: In progress
 ## Decisions
 
 - Canonical production path set to `/opt/workai`.
-- Transitional `/opt/WorkAI` is explicitly documented as temporary during migration.
+- Mixed-case path variant is explicitly documented as temporary during migration.
 - Phase 11 readiness result intentionally returns `risky` until real 7-day parallel
   run and post-cutover hold are executed.
 

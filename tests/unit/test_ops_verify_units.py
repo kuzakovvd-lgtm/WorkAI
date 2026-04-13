@@ -4,9 +4,9 @@ from WorkAI.ops.verify_units import _extract_paths, run_verify_units
 
 
 def test_extract_paths_from_execstart() -> None:
-    interpreter, script = _extract_paths("/usr/bin/python3 /opt/WorkAI/scripts/run_healthcheck.py")
+    interpreter, script = _extract_paths("/usr/bin/python3 /opt/workai/scripts/run_healthcheck.py")
     assert interpreter == "/usr/bin/python3"
-    assert script == "/opt/WorkAI/scripts/run_healthcheck.py"
+    assert script == "/opt/workai/scripts/run_healthcheck.py"
 
 
 def test_verify_units_detects_missing_paths(tmp_path: Path) -> None:

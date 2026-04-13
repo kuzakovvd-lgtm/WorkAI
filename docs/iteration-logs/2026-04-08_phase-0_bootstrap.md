@@ -48,7 +48,7 @@
 
 - Server SSH connectivity: confirmed to `root@72.56.83.16`.
 - Repo push to GitHub: successful (`main` branch created).
-- Server setup at `/opt/WorkAI`: clone + `.venv` with `python3.12.3`.
+- Server setup at `/opt/workai`: clone + `.venv` with `python3.12.3`.
 - Server checks (`ruff/mypy/pytest`): passed on Python 3.12.
 
 ## Decisions and rationale

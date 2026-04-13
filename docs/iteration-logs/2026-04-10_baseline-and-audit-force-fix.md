@@ -8,7 +8,7 @@
 
 ## Baseline captured
 
-- Runtime path: `/opt/workai -> /opt/WorkAI`
+- Runtime path: `/opt/workai`
 - Branch: `Itogmain`
 - Counters:
   - `sheet_cells = 31376`

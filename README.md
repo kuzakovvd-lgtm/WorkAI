@@ -8,7 +8,7 @@ Employee quality & audit system — v2 modular rewrite.
 
 WorkAI v2 is running with real Google Sheets ingestion and downstream processing.
 
-- Runtime path: `/opt/workai -> /opt/WorkAI`
+- Runtime path: `/opt/workai`
 - Active branch: `Itogmain`
 - Parse supports real weekly-board sheets (week blocks + day columns + sheet-as-employee fallback)
 - Healthcheck: working (`severity=info`)
@@ -337,7 +337,7 @@ python scripts/run_parallel_diff.py \
 Canonical production path policy:
 
 - target: `/opt/workai`
-- compatibility symlink in runtime: `/opt/workai -> /opt/WorkAI`.
+- mixed-case path aliases are retired.
 - legacy v1 stack is removed from active server runtime.
 - see `CUTOVER.md` for alignment and rollback procedure.
 

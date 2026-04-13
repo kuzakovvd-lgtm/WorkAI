@@ -81,7 +81,7 @@
 - Alembic offline SQL generation:
   - `WORKAI_DB__DSN=postgresql://user:pass@localhost:5432/workai alembic upgrade head --sql`
   - result includes baseline DDL for `alembic_version` and revision `0001_baseline`.
-- Server validation (`/opt/WorkAI`, Python `3.12.3`):
+- Server validation (`/opt/workai`, Python `3.12.3`):
   - `pip install -e ".[dev]"`, `ruff`, `mypy`, `pytest` all passed.
 
 ## Decisions and rationale

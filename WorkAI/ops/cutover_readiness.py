@@ -74,7 +74,7 @@ def run_cutover_readiness(repo_root: str | None = None) -> CutoverReadinessResul
                 details={"canonical_path": _CANONICAL_PATH, "current_path": _CURRENT_PATH},
             )
         )
-        residual_risks.append("Path alignment `/opt/workai` vs `/opt/WorkAI` still requires cutover action.")
+        residual_risks.append("Canonical path alignment still requires cutover action.")
 
     missing_deploy = [rel for rel in _REQUIRED_DEPLOY_FILES if not (root / rel).exists()]
     if missing_deploy:

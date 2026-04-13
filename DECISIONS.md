@@ -173,7 +173,7 @@ This file stores short ADR-style entries.
 - Date: 2026-04-10
 - Context: WorkAI v2 reached stable end-to-end execution on connected Google Sheets and needs a fixed operational baseline before further hardening.
 - Decision:
-  - record baseline runtime assumptions (`/opt/workai -> /opt/WorkAI`, `Itogmain`);
+  - record baseline runtime assumptions (`/opt/workai`, `Itogmain`);
   - record observed pipeline counters as baseline snapshot;
   - treat weekly-board parse support as part of baseline parser behavior.
 - Consequences:

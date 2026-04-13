@@ -55,7 +55,7 @@ Alembic head: `0014_notification_log`.
 
 Runtime paths and directories:
 
-- code: `/opt/workai -> /opt/WorkAI`
+- code: `/opt/workai`
 - config root: `/etc/workai`
 - secrets: `/etc/workai/secrets`
 - logs: `/var/log/workai`

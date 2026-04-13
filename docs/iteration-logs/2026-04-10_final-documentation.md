@@ -15,7 +15,7 @@
 ## Key alignment points
 
 - Active branch of record: `Itogmain`.
-- Runtime path policy: `/opt/workai -> /opt/WorkAI`.
+- Runtime path policy: `/opt/workai`.
 - Legacy v1 stack removed from active runtime.
 - Runtime DB split:
   - production-like runtime DB via `db.env` (`workai_v2_test`),

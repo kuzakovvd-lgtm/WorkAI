@@ -2,7 +2,7 @@
 
 ## Current production-like baseline (2026-04-10)
 
-- Runtime path: `/opt/workai -> /opt/WorkAI`
+- Runtime path: `/opt/workai`
 - Active branch: `Itogmain`
 - Connected Google Sheets are ingesting into `sheet_cells`
 - Parse fallback for weekly-board layout is enabled and producing `raw_tasks`
@@ -320,7 +320,7 @@ python scripts/run_verify_units.py --unit-dir /etc/systemd/system
 ## Server path conventions
 
 - v2 canonical: `/opt/workai`
-- v2 current transitional path in some hosts: `/opt/WorkAI`
+- mixed-case path aliases are not allowed in production.
 - v1 (do not modify): `/opt/employee-analytics`
 
 ## Migration & cutover (Phase 11)
