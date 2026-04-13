@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from datetime import datetime
+from datetime import date, datetime
 
 from psycopg import Cursor
 
@@ -26,6 +26,36 @@ ORDER BY sheet_title, row_idx, col_idx
 DELETE_RAW_TASKS_FOR_SHEET_SQL = """
 DELETE FROM raw_tasks
 WHERE spreadsheet_id = %s AND sheet_title = %s
+"""
+
+SELECT_RAW_TASK_DATES_FOR_SHEET_SQL = """
+SELECT DISTINCT work_date
+FROM raw_tasks
+WHERE spreadsheet_id = %s
+  AND sheet_title = %s
+  AND work_date IS NOT NULL
+ORDER BY work_date
+"""
+
+DELETE_RAW_TASKS_FOR_SHEET_DATES_SQL = """
+DELETE FROM raw_tasks
+WHERE spreadsheet_id = %s
+  AND sheet_title = %s
+  AND work_date = ANY(%s::date[])
+"""
+
+DELETE_RAW_TASKS_FOR_SHEET_NULL_DATE_SQL = """
+DELETE FROM raw_tasks
+WHERE spreadsheet_id = %s
+  AND sheet_title = %s
+  AND work_date IS NULL
+"""
+
+DELETE_TASKS_NORMALIZED_FOR_SHEET_DATES_SQL = """
+DELETE FROM tasks_normalized
+WHERE spreadsheet_id = %s
+  AND sheet_title = %s
+  AND work_date = ANY(%s::date[])
 """
 
 INSERT_RAW_TASK_SQL = """
@@ -77,6 +107,59 @@ def delete_raw_tasks_for_sheet(
     """Delete old raw_tasks for one sheet before full-refresh insert."""
 
     cursor.execute(DELETE_RAW_TASKS_FOR_SHEET_SQL, (spreadsheet_id, sheet_title))
+
+
+def fetch_raw_task_dates_for_sheet(
+    cursor: Cursor[tuple[date]],
+    spreadsheet_id: str,
+    sheet_title: str,
+) -> list[date]:
+    """Return existing raw_tasks date scope for one sheet."""
+
+    cursor.execute(SELECT_RAW_TASK_DATES_FOR_SHEET_SQL, (spreadsheet_id, sheet_title))
+    return [row[0] for row in cursor.fetchall()]
+
+
+def delete_tasks_normalized_for_sheet_dates(
+    cursor: Cursor[tuple[object, ...]],
+    spreadsheet_id: str,
+    sheet_title: str,
+    work_dates: Sequence[date],
+) -> None:
+    """Delete dependent normalized rows for one sheet/date scope."""
+
+    if not work_dates:
+        return
+    cursor.execute(
+        DELETE_TASKS_NORMALIZED_FOR_SHEET_DATES_SQL,
+        (spreadsheet_id, sheet_title, list(work_dates)),
+    )
+
+
+def delete_raw_tasks_for_sheet_dates(
+    cursor: Cursor[tuple[object, ...]],
+    spreadsheet_id: str,
+    sheet_title: str,
+    work_dates: Sequence[date],
+) -> None:
+    """Delete raw_tasks for one sheet/date scope."""
+
+    if not work_dates:
+        return
+    cursor.execute(
+        DELETE_RAW_TASKS_FOR_SHEET_DATES_SQL,
+        (spreadsheet_id, sheet_title, list(work_dates)),
+    )
+
+
+def delete_raw_tasks_for_sheet_null_date(
+    cursor: Cursor[tuple[object, ...]],
+    spreadsheet_id: str,
+    sheet_title: str,
+) -> None:
+    """Delete raw_tasks for one sheet where work_date is NULL."""
+
+    cursor.execute(DELETE_RAW_TASKS_FOR_SHEET_NULL_DATE_SQL, (spreadsheet_id, sheet_title))
 
 
 def insert_raw_tasks_batch(

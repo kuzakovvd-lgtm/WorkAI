@@ -4,7 +4,10 @@ from __future__ import annotations
 
 from collections import defaultdict
 from collections.abc import Iterable, Iterator
+from datetime import date
 from time import perf_counter
+
+from psycopg import Cursor
 
 from WorkAI.common import ConfigError, configure_logging, get_logger
 from WorkAI.config import Settings, get_settings
@@ -12,7 +15,10 @@ from WorkAI.db import close_db, connection, init_db
 from WorkAI.parse.models import SheetCell
 from WorkAI.parse.parser import parse_cells
 from WorkAI.parse.queries import (
-    delete_raw_tasks_for_sheet,
+    delete_raw_tasks_for_sheet_dates,
+    delete_raw_tasks_for_sheet_null_date,
+    delete_tasks_normalized_for_sheet_dates,
+    fetch_raw_task_dates_for_sheet,
     fetch_sheet_cells,
     insert_raw_tasks_batch,
 )
@@ -67,11 +73,21 @@ def run_parse(settings: Settings | None = None) -> None:
             )
 
             rows, stats = parse_cells(sheet_cells, resolved.parse)
+            parsed_dates = {row.work_date for row in rows if row.work_date is not None}
 
             with connection() as conn:
                 try:
                     with conn.cursor() as cur:
-                        delete_raw_tasks_for_sheet(cur, spreadsheet_id, sheet_title)
+                        existing_dates = set(
+                            fetch_raw_task_dates_for_sheet(cur, spreadsheet_id, sheet_title)
+                        )
+                        refresh_dates = sorted(existing_dates | parsed_dates)
+                        _delete_refresh_scope(
+                            cur,
+                            spreadsheet_id=spreadsheet_id,
+                            sheet_title=sheet_title,
+                            refresh_dates=refresh_dates,
+                        )
                         for batch in _chunked(rows, 1000):
                             insert_raw_tasks_batch(cur, batch)
                     conn.commit()
@@ -111,3 +127,31 @@ def _chunked[T](items: Iterable[T], size: int) -> Iterator[list[T]]:
             batch = []
     if batch:
         yield batch
+
+
+def _delete_refresh_scope(
+    cur: Cursor[tuple[object, ...]],
+    *,
+    spreadsheet_id: str,
+    sheet_title: str,
+    refresh_dates: list[date],
+) -> None:
+    """Delete dependent rows first, then parent rows for parse refresh scope."""
+
+    delete_tasks_normalized_for_sheet_dates(
+        cur,
+        spreadsheet_id=spreadsheet_id,
+        sheet_title=sheet_title,
+        work_dates=refresh_dates,
+    )
+    delete_raw_tasks_for_sheet_dates(
+        cur,
+        spreadsheet_id=spreadsheet_id,
+        sheet_title=sheet_title,
+        work_dates=refresh_dates,
+    )
+    delete_raw_tasks_for_sheet_null_date(
+        cur,
+        spreadsheet_id=spreadsheet_id,
+        sheet_title=sheet_title,
+    )
