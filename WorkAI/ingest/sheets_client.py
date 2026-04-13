@@ -7,17 +7,15 @@ import json
 import random
 import time
 from collections.abc import Callable
-from typing import Any, Protocol, cast
-
-import httplib2  # type: ignore[import-untyped]
-from google.oauth2 import service_account
-from google_auth_httplib2 import AuthorizedHttp  # type: ignore[import-untyped]
-from googleapiclient.discovery import Resource, build  # type: ignore[import-untyped]
-from googleapiclient.errors import HttpError  # type: ignore[import-untyped]
+from typing import TYPE_CHECKING, Any, Protocol, cast
 
 from WorkAI.common import get_logger
 from WorkAI.config import GoogleSheetsSettings
 from WorkAI.ingest.models import ValueRange
+
+if TYPE_CHECKING:
+    from google.oauth2 import service_account
+    from googleapiclient.discovery import Resource
 
 
 class SheetsClient(Protocol):
@@ -39,7 +37,7 @@ class GoogleApiSheetsClient(SheetsClient):
 
     def __init__(
         self,
-        service: Resource,
+        service: Any,
         *,
         max_retries: int,
         backoff_base_sec: float,
@@ -54,6 +52,9 @@ class GoogleApiSheetsClient(SheetsClient):
     @classmethod
     def from_settings(cls, settings: GoogleSheetsSettings) -> GoogleApiSheetsClient:
         """Build Google API client from settings."""
+        import httplib2  # type: ignore[import-untyped]
+        from google_auth_httplib2 import AuthorizedHttp  # type: ignore[import-untyped]
+        from googleapiclient.discovery import build  # type: ignore[import-untyped]
 
         scope = (
             "https://www.googleapis.com/auth/spreadsheets.readonly"
@@ -153,7 +154,9 @@ class GoogleApiSheetsClient(SheetsClient):
 def _build_credentials(
     settings: GoogleSheetsSettings,
     scope: str,
-) -> service_account.Credentials:
+) -> "service_account.Credentials":
+    from google.oauth2 import service_account
+
     if settings.service_account_file is not None and settings.service_account_file.strip() != "":
         credentials = service_account.Credentials.from_service_account_file(  # type: ignore[no-untyped-call]
             settings.service_account_file.strip(),
@@ -187,8 +190,21 @@ def _coerce_values(raw_values: object) -> list[list[Any]]:
 
 
 def _is_retryable(exc: Exception) -> bool:
-    if isinstance(exc, HttpError):
+    try:
+        import httplib2  # type: ignore[import-untyped]
+    except Exception:
+        httplib2 = None  # type: ignore[assignment]
+
+    try:
+        from googleapiclient.errors import HttpError  # type: ignore[import-untyped]
+    except Exception:
+        HttpError = None  # type: ignore[assignment,misc]
+
+    if HttpError is not None and isinstance(exc, HttpError):
         status = int(getattr(exc.resp, "status", 0))
         return status == 429 or 500 <= status < 600
 
-    return isinstance(exc, (ConnectionError, TimeoutError, OSError, httplib2.HttpLib2Error))
+    retryable_errors: tuple[type[BaseException], ...] = (ConnectionError, TimeoutError, OSError)
+    if httplib2 is not None:
+        retryable_errors += (httplib2.HttpLib2Error,)
+    return isinstance(exc, retryable_errors)

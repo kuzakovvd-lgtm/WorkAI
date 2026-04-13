@@ -236,7 +236,7 @@ def test_api_smoke(monkeypatch: pytest.MonkeyPatch) -> None:
             cached=not force,
         )
 
-    monkeypatch.setattr(analysis_routes, "run_audit", fake_run_audit)
+    monkeypatch.setattr(analysis_routes, "_resolve_run_audit", lambda: fake_run_audit)
 
     headers = {"X-API-Key": "integration-api-key"}
     with TestClient(api_main.app) as client:

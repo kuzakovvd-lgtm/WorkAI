@@ -6,6 +6,7 @@ from uuid import UUID
 import pytest
 from fastapi.testclient import TestClient
 from WorkAI.audit.models import AuditRunResult
+from WorkAI.common import ConfigError
 from WorkAI.config import get_settings
 
 
@@ -72,7 +73,7 @@ def test_analysis_start_serialization(client: TestClient, monkeypatch: pytest.Mo
             cached=not force,
         )
 
-    monkeypatch.setattr(analysis_routes, "run_audit", fake_run_audit)
+    monkeypatch.setattr(analysis_routes, "_resolve_run_audit", lambda: fake_run_audit)
 
     response = client.post(
         "/analysis/start",
@@ -85,3 +86,29 @@ def test_analysis_start_serialization(client: TestClient, monkeypatch: pytest.Mo
     assert body["run_id"] == str(run_id)
     assert body["status"] == "completed"
     assert body["report_json"] == {"executive_summary": "ok"}
+
+
+def test_analysis_start_returns_controlled_error_when_runtime_unavailable(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from WorkAI.api.routes import analysis as analysis_routes
+
+    def fail_run_audit() -> object:
+        raise ConfigError("CrewAI endpoint is unavailable")
+
+    monkeypatch.setattr(analysis_routes, "_resolve_run_audit", fail_run_audit)
+
+    response = client.post(
+        "/analysis/start",
+        headers={"X-API-Key": "unit-test-key"},
+        json={"employee_id": 7, "task_date": "2026-04-09", "force": False},
+    )
+
+    assert response.status_code == 503
+    assert response.json() == {
+        "error": {
+            "code": "analysis_unavailable",
+            "message": "CrewAI endpoint is unavailable",
+        }
+    }

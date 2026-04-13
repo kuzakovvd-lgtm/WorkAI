@@ -4,12 +4,15 @@ from __future__ import annotations
 
 import asyncio
 from datetime import date
+from functools import lru_cache
+from importlib import import_module
+from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header, Query
 
 from WorkAI.api.dependencies import get_db, verify_api_key
-from WorkAI.api.errors import not_found_error
+from WorkAI.api.errors import http_error, not_found_error
 from WorkAI.api.queries import fetch_audit_history, fetch_audit_run, insert_audit_feedback
 from WorkAI.api.schemas import (
     AnalysisStartRequest,
@@ -19,13 +22,23 @@ from WorkAI.api.schemas import (
     FeedbackRequest,
     FeedbackResponse,
 )
-from WorkAI.audit import run_audit
+from WorkAI.common import ConfigError
 from WorkAI.db import connection
 
 router = APIRouter(prefix="/analysis", tags=["analysis"], dependencies=[Depends(verify_api_key), Depends(get_db)])
+_ANALYSIS_START_TIMEOUT_SEC = 30.0
+
+
+@lru_cache(maxsize=1)
+def _resolve_run_audit() -> Any:
+    """Resolve audit runtime lazily to avoid API startup coupling."""
+
+    module = import_module("WorkAI.audit")
+    return getattr(module, "run_audit")
 
 
 def _start_analysis(payload: AnalysisStartRequest) -> AnalysisStartResponse:
+    run_audit = _resolve_run_audit()
     result = run_audit(payload.employee_id, payload.task_date, force=payload.force)
     return AnalysisStartResponse(
         run_id=result.run_id,
@@ -83,7 +96,17 @@ def _write_feedback(run_id: UUID, payload: FeedbackRequest, submitted_by_header:
 async def start_analysis(payload: AnalysisStartRequest) -> AnalysisStartResponse:
     """Start audit run for one employee/day."""
 
-    return await asyncio.to_thread(_start_analysis, payload)
+    try:
+        return await asyncio.wait_for(
+            asyncio.to_thread(_start_analysis, payload),
+            timeout=_ANALYSIS_START_TIMEOUT_SEC,
+        )
+    except asyncio.TimeoutError as exc:
+        raise http_error(504, "analysis_timeout", "Audit startup timed out") from exc
+    except ConfigError as exc:
+        raise http_error(503, "analysis_unavailable", str(exc)) from exc
+    except Exception as exc:
+        raise http_error(503, "analysis_runtime_error", f"Audit runtime unavailable: {type(exc).__name__}") from exc
 
 
 @router.get("/status/{run_id}", response_model=AuditRunStatusDTO)
