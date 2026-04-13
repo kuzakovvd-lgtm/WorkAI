@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import importlib
 import json
 import random
 import time
@@ -190,14 +191,14 @@ def _coerce_values(raw_values: object) -> list[list[Any]]:
 
 def _is_retryable(exc: Exception) -> bool:
     try:
-        import httplib2  # type: ignore[import-untyped]
+        import httplib2
     except Exception:
-        httplib2 = None  # type: ignore[assignment]
+        httplib2 = None
 
     try:
-        import googleapiclient.errors as googleapi_errors  # type: ignore[import-untyped]
+        googleapi_errors = importlib.import_module("googleapiclient.errors")
     except Exception:
-        googleapi_errors = None  # type: ignore[assignment,misc]
+        googleapi_errors = None
 
     google_http_error = (
         None if googleapi_errors is None else getattr(googleapi_errors, "HttpError", None)
