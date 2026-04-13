@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+import os
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
+from urllib.error import HTTPError, URLError
+from urllib.parse import urlencode
+from urllib.request import Request, urlopen
 
 from psycopg import Cursor
 
@@ -13,6 +17,7 @@ from WorkAI.db import close_db, connection, get_pool, init_db
 from WorkAI.ops.models import CheckResult, HealthcheckResult, Severity
 from WorkAI.ops.queries import (
     fetch_db_health,
+    fetch_latest_tasks_target,
     fetch_recent_audit_failure_rate,
     fetch_table_count,
     fetch_table_max_timestamp,
@@ -90,6 +95,7 @@ def run_healthcheck(
             checks.extend(_freshness_checks(cur, unit_dir=unit_dir))
             checks.extend(_data_volume_checks(cur, today))
             checks.extend(_audit_error_rate_checks(cur, today))
+            checks.extend(_protected_api_checks(cur, resolved))
 
     # Unit verification
     verify_result = run_verify_units(unit_dir=unit_dir)
@@ -224,6 +230,79 @@ def _freshness_checks(cur: Cursor[object], *, unit_dir: str) -> list[CheckResult
 
 def _has_scheduled_audit_timer(unit_dir: str) -> bool:
     return (Path(unit_dir) / "workai-audit.timer").exists()
+
+
+def _protected_api_checks(cur: Cursor[object], settings: Settings) -> list[CheckResult]:
+    api_key = ((settings.api.api_key or "") or os.getenv("WORKAI_API_KEY", "")).strip()
+    if api_key == "":
+        return [
+            CheckResult(
+                name="api_protected_tasks_raw",
+                status="not_applicable",
+                severity="info",
+                message="Protected API probe skipped: WORKAI_API_KEY is not configured",
+            )
+        ]
+
+    target = fetch_latest_tasks_target(cur)
+    if target is None:
+        return [
+            CheckResult(
+                name="api_protected_tasks_raw",
+                status="not_applicable",
+                severity="info",
+                message="Protected API probe skipped: tasks_normalized has no rows",
+            )
+        ]
+
+    employee_id, task_date = target
+    api_base_url = os.getenv("WORKAI_HEALTHCHECK__API_BASE_URL", "http://127.0.0.1:8000").strip().rstrip("/")
+    query = urlencode({"employee_id": employee_id, "task_date": task_date.isoformat()})
+    url = f"{api_base_url}/tasks/raw?{query}"
+    request = Request(url, headers={"X-API-Key": api_key})
+
+    try:
+        with urlopen(request, timeout=5.0) as response:
+            code = int(response.status)
+        if code != 200:
+            return [
+                CheckResult(
+                    name="api_protected_tasks_raw",
+                    status="critical",
+                    severity="infra_critical",
+                    message="Protected API endpoint returned non-200",
+                    details={"url": url, "status_code": code},
+                )
+            ]
+        return [
+            CheckResult(
+                name="api_protected_tasks_raw",
+                status="ok",
+                severity="info",
+                message="Protected API endpoint is reachable",
+                details={"url": url, "status_code": code},
+            )
+        ]
+    except HTTPError as exc:
+        return [
+            CheckResult(
+                name="api_protected_tasks_raw",
+                status="critical",
+                severity="infra_critical",
+                message="Protected API endpoint HTTP error",
+                details={"url": url, "status_code": int(exc.code)},
+            )
+        ]
+    except (TimeoutError, URLError) as exc:
+        return [
+            CheckResult(
+                name="api_protected_tasks_raw",
+                status="critical",
+                severity="infra_critical",
+                message="Protected API endpoint is unreachable",
+                details={"url": url, "error": str(exc)},
+            )
+        ]
 
 
 def _data_volume_checks(cur: Cursor[object], target_date: date) -> list[CheckResult]:

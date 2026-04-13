@@ -37,6 +37,9 @@ jobs:
           pip install -e ".[dev]"
           pip install psycopg2-binary
 
+      - name: AI dependency compatibility guard
+        run: python scripts/check_ai_dependency_compat.py
+
       - name: Ruff
         run: ruff check .
 
@@ -131,6 +134,14 @@ jobs:
         run: |
           alembic downgrade -1
           alembic upgrade head
+
+      - name: API integration smoke (must not skip)
+        run: |
+          pytest -q tests/integration/test_api_smoke.py --require-integration-env -rA | tee /tmp/api_smoke.txt
+          if grep -Eq "SKIPPED| [0-9]+ skipped" /tmp/api_smoke.txt; then
+            echo "API integration smoke was skipped, expected real execution"
+            exit 1
+          fi
 
       - name: Audit integration smoke (must not skip)
         run: |

@@ -39,7 +39,12 @@ def _resolve_run_audit() -> Any:
 
 def _start_analysis(payload: AnalysisStartRequest) -> AnalysisStartResponse:
     run_audit = _resolve_run_audit()
-    result = run_audit(payload.employee_id, payload.task_date, force=payload.force)
+    result = run_audit(
+        payload.employee_id,
+        payload.task_date,
+        force=payload.force,
+        manage_db_lifecycle=False,
+    )
     return AnalysisStartResponse(
         run_id=result.run_id,
         employee_id=result.employee_id,

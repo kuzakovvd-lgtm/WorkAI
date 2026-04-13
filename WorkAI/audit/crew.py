@@ -67,6 +67,7 @@ def run_audit(
     task_date: date,
     *,
     force: bool = False,
+    manage_db_lifecycle: bool = True,
     settings: Settings | None = None,
     crew_builder: Callable[..., Any] = build_audit_crew,
 ) -> AuditRunResult:
@@ -195,7 +196,8 @@ def run_audit(
         )
         raise
     finally:
-        close_db()
+        if manage_db_lifecycle:
+            close_db()
 
 
 def _persist_failed_run(run_id: UUID, error: str, *, resolved: Settings) -> None:

@@ -63,7 +63,14 @@ def test_analysis_start_serialization(client: TestClient, monkeypatch: pytest.Mo
 
     from WorkAI.api.routes import analysis as analysis_routes
 
-    def fake_run_audit(employee_id: int, task_date: date, *, force: bool = False) -> AuditRunResult:
+    def fake_run_audit(
+        employee_id: int,
+        task_date: date,
+        *,
+        force: bool = False,
+        manage_db_lifecycle: bool = True,
+    ) -> AuditRunResult:
+        assert manage_db_lifecycle is False
         return AuditRunResult(
             run_id=run_id,
             employee_id=employee_id,
@@ -94,7 +101,7 @@ def test_analysis_start_returns_controlled_error_when_runtime_unavailable(
 ) -> None:
     from WorkAI.api.routes import analysis as analysis_routes
 
-    def fail_run_audit() -> object:
+    def fail_run_audit(*_: object, **__: object) -> object:
         raise ConfigError("CrewAI endpoint is unavailable")
 
     monkeypatch.setattr(analysis_routes, "_resolve_run_audit", fail_run_audit)

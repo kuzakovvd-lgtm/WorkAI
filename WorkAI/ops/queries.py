@@ -59,6 +59,13 @@ WHERE task_date >= (%s::date - interval '7 days')
   AND task_date <= %s::date
 """
 
+FETCH_LATEST_TASKS_TARGET_SQL = """
+SELECT employee_id, task_date
+FROM tasks_normalized
+ORDER BY normalized_at DESC NULLS LAST, task_date DESC, employee_id ASC
+LIMIT 1
+"""
+
 
 def sweep_stale_audit_runs(cur: Cursor[object], threshold_minutes: int) -> int:
     """Mark stale audit runs and return number of updated rows."""
@@ -155,3 +162,13 @@ def fetch_recent_audit_failure_rate(cur: Cursor[object], target_date: date) -> t
     if row is None:
         return (0, 0)
     return (int(row[0]), int(row[1]))
+
+
+def fetch_latest_tasks_target(cur: Cursor[object]) -> tuple[int, date] | None:
+    """Return one employee/date pair suitable for protected tasks endpoint probe."""
+
+    cur.execute(FETCH_LATEST_TASKS_TARGET_SQL)
+    row = cast(tuple[Any, ...] | None, cur.fetchone())
+    if row is None:
+        return None
+    return (int(row[0]), cast(date, row[1]))

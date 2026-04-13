@@ -224,9 +224,16 @@ def test_api_smoke(monkeypatch: pytest.MonkeyPatch) -> None:
     from WorkAI.api import main as api_main
     from WorkAI.api.routes import analysis as analysis_routes
 
-    def fake_run_audit(emp_id: int, run_day: date, *, force: bool = False) -> AuditRunResult:
+    def fake_run_audit(
+        emp_id: int,
+        run_day: date,
+        *,
+        force: bool = False,
+        manage_db_lifecycle: bool = True,
+    ) -> AuditRunResult:
         assert emp_id == employee_id
         assert run_day == task_day
+        assert manage_db_lifecycle is False
         return AuditRunResult(
             run_id=start_run_id,
             employee_id=emp_id,
