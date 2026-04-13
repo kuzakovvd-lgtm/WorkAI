@@ -45,7 +45,7 @@ def parse_docx_article(path: Path) -> KnowledgeArticleDocument:
     """Parse one DOCX file into article payload."""
 
     try:
-        from docx import Document  # type: ignore[import-not-found]
+        from docx import Document
     except ImportError as exc:  # pragma: no cover - dependency guard
         raise RuntimeError("python-docx is required for .docx knowledge sources") from exc
 
@@ -78,7 +78,7 @@ def parse_pdf_article(path: Path) -> KnowledgeArticleDocument:
     """Parse one PDF file into article payload."""
 
     try:
-        from pypdf import PdfReader  # type: ignore[import-not-found]
+        from pypdf import PdfReader
     except ImportError as exc:  # pragma: no cover - dependency guard
         raise RuntimeError("pypdf is required for .pdf knowledge sources") from exc
 
