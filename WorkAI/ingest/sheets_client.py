@@ -15,7 +15,6 @@ from WorkAI.ingest.models import ValueRange
 
 if TYPE_CHECKING:
     from google.oauth2 import service_account
-    from googleapiclient.discovery import Resource
 
 
 class SheetsClient(Protocol):
@@ -154,7 +153,7 @@ class GoogleApiSheetsClient(SheetsClient):
 def _build_credentials(
     settings: GoogleSheetsSettings,
     scope: str,
-) -> "service_account.Credentials":
+) -> service_account.Credentials:
     from google.oauth2 import service_account
 
     if settings.service_account_file is not None and settings.service_account_file.strip() != "":
@@ -196,11 +195,15 @@ def _is_retryable(exc: Exception) -> bool:
         httplib2 = None  # type: ignore[assignment]
 
     try:
-        from googleapiclient.errors import HttpError  # type: ignore[import-untyped]
+        import googleapiclient.errors as googleapi_errors  # type: ignore[import-untyped]
     except Exception:
-        HttpError = None  # type: ignore[assignment,misc]
+        googleapi_errors = None  # type: ignore[assignment,misc]
 
-    if HttpError is not None and isinstance(exc, HttpError):
+    google_http_error = (
+        None if googleapi_errors is None else getattr(googleapi_errors, "HttpError", None)
+    )
+
+    if google_http_error is not None and isinstance(exc, google_http_error):
         status = int(getattr(exc.resp, "status", 0))
         return status == 429 or 500 <= status < 600
 

@@ -34,7 +34,7 @@ def _resolve_run_audit() -> Any:
     """Resolve audit runtime lazily to avoid API startup coupling."""
 
     module = import_module("WorkAI.audit")
-    return getattr(module, "run_audit")
+    return module.run_audit
 
 
 def _start_analysis(payload: AnalysisStartRequest) -> AnalysisStartResponse:
@@ -101,7 +101,7 @@ async def start_analysis(payload: AnalysisStartRequest) -> AnalysisStartResponse
             asyncio.to_thread(_start_analysis, payload),
             timeout=_ANALYSIS_START_TIMEOUT_SEC,
         )
-    except asyncio.TimeoutError as exc:
+    except TimeoutError as exc:
         raise http_error(504, "analysis_timeout", "Audit startup timed out") from exc
     except ConfigError as exc:
         raise http_error(503, "analysis_unavailable", str(exc)) from exc
