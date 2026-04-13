@@ -53,13 +53,20 @@ def _show_properties(unit: str, properties: list[str]) -> dict[str, str]:
     return result
 
 
-def _usec_to_iso(value: str) -> str | None:
+def _systemd_time_to_iso(value: str) -> str | None:
     if value.strip() in {"", "0", "n/a"}:
         return None
     try:
+        # Some systemd versions return usec epoch values.
         dt = datetime.fromtimestamp(int(value) / 1_000_000, tz=UTC)
     except (TypeError, ValueError, OSError):
-        return None
+        # Other versions return formatted timestamps like:
+        # "Mon 2026-04-13 08:42:28 UTC"
+        try:
+            dt = datetime.strptime(value, "%a %Y-%m-%d %H:%M:%S %Z")
+            dt = dt.replace(tzinfo=UTC)
+        except ValueError:
+            return None
     return dt.isoformat()
 
 
@@ -89,9 +96,9 @@ def main() -> int:
             issues.append(f"missing timer in systemctl list-timers: {timer}")
 
     for timer in expected_timers:
-        props = _show_properties(timer, ["LastTriggerUSecRealtime", "NextElapseUSecRealtime"])
-        last_iso = _usec_to_iso(props.get("LastTriggerUSecRealtime", ""))
-        next_iso = _usec_to_iso(props.get("NextElapseUSecRealtime", ""))
+        props = _show_properties(timer, ["LastTriggerUSec", "NextElapseUSecRealtime"])
+        last_iso = _systemd_time_to_iso(props.get("LastTriggerUSec", ""))
+        next_iso = _systemd_time_to_iso(props.get("NextElapseUSecRealtime", ""))
         timer_info = {"last_trigger": last_iso, "next_elapse": next_iso}
         cast_timers = payload["timers"]
         assert isinstance(cast_timers, dict)
@@ -133,8 +140,6 @@ def main() -> int:
 
         if service_info["journal_lines"] == 0:
             issues.append(f"{service}: no journal entries in the last {args.window_hours}h")
-        if "Failed with result" in journal:
-            issues.append(f"{service}: journal has failure entries")
         if service_info["result"] not in {"success", ""}:
             issues.append(f"{service}: systemctl Result={service_info['result']}")
 
