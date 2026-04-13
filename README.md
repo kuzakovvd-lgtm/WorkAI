@@ -64,7 +64,7 @@ pip install -e ".[dev]"
 python -c "import WorkAI; print(WorkAI.__version__)"
 ruff check .
 mypy WorkAI
-pytest
+pytest -q -m "not integration and not integration_online"
 ```
 
 ## Database & migrations (Phase 1)
@@ -91,11 +91,16 @@ python scripts/workai_migrate.py downgrade -1
 alembic upgrade head --sql
 ```
 
-Run integration connectivity test locally:
+Run integration checks locally (isolated integration environment):
 
 ```bash
-export WORKAI_DB__DSN=postgresql://user:pass@host:5432/workai
-pytest tests/integration/test_db_connectivity.py
+cp deploy/secrets.example/db.test.env.example /etc/workai/secrets/db.test.env
+# optional (for online Google checks):
+# cp deploy/secrets.example/google_sheets.test.env.example /etc/workai/secrets/google_sheets.test.env
+
+scripts/run_integration_checks.sh
+# online profile:
+# WORKAI_PYTEST_MARK_EXPR=integration_online scripts/run_integration_checks.sh
 ```
 
 ## Ingest (Phase 2)
@@ -176,7 +181,9 @@ python scripts/workai_normalize.py run
 
 ## Pre-flight hardening (Phase 4.5)
 
-- Integration CI now includes ephemeral PostgreSQL job (`pytest -m integration`).
+- Integration CI includes:
+  - PostgreSQL integration job (`pytest -m integration --require-integration-env`);
+  - Google online integration job (`pytest -m integration_online --require-integration-online-env`).
 - Normalize writes record-level failures to `pipeline_errors`.
 - Normalize full-refresh runs with advisory lock single-flight per `(spreadsheet_id, sheet_title, work_date)`.
 - Assess-like query plan baseline can be generated via:

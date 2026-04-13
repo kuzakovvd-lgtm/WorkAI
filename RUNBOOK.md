@@ -37,17 +37,16 @@ pip install -e ".[dev]"
 ```bash
 ruff check .
 mypy WorkAI
-pytest
+pytest -q -m "not integration and not integration_online"
 ```
 
 Server integration verification (isolated DB):
 
 ```bash
-set -a
-source /etc/workai/secrets/db.test.env
-source /etc/workai/secrets/api.env
-set +a
-pytest -q -m integration
+scripts/run_integration_checks.sh
+
+# Online Google integration checks (requires google_sheets.test.env):
+WORKAI_PYTEST_MARK_EXPR=integration_online scripts/run_integration_checks.sh
 ```
 
 ## Database environment
@@ -68,6 +67,7 @@ Server DB split policy:
 
 - production runtime: `/etc/workai/secrets/db.env` -> DB `workai_v2_test`;
 - integration smoke: `/etc/workai/secrets/db.test.env` -> DB `workai_v2_integration`;
+- integration online (Google): `/etc/workai/secrets/google_sheets.test.env`;
 - do not run integration smoke on production runtime DB.
 
 ## Migrations
