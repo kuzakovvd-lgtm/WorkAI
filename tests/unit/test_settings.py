@@ -52,7 +52,8 @@ def test_gsheets_enabled_without_required_fields_raises(monkeypatch: pytest.Monk
 
 
 def test_require_dsn_raises_without_dsn(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("WORKAI_DB__DSN", raising=False)
+    # Override any value from .env so the DSN is effectively missing.
+    monkeypatch.setenv("WORKAI_DB__DSN", "")
 
     get_settings.cache_clear()
     settings = get_settings()

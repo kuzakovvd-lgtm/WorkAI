@@ -90,6 +90,10 @@ packages = ["WorkAI"]
 module = "WorkAI.api.*"
 disallow_untyped_decorators = false
 
+[[tool.mypy.overrides]]
+module = ["docx", "pypdf"]
+ignore_missing_imports = true
+
 [tool.pytest.ini_options]
 minversion = "8.0"
 testpaths = ["tests"]
