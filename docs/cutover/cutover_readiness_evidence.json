@@ -1,0 +1,30 @@
+{
+  "recorded_at": "2026-04-13T10:32:00+03:00",
+  "operator": "workai-ops",
+  "path_policy": {
+    "aligned": true,
+    "canonical_path": "/opt/workai",
+    "active_path": "/opt/workai",
+    "artifact": "docs/cutover/artifacts/2026-04-13/path-policy-alignment.md"
+  },
+  "parallel_run": {
+    "completed": true,
+    "start_date": "2026-04-06",
+    "end_date": "2026-04-12",
+    "days": 7,
+    "artifact": "docs/cutover/artifacts/2026-04-13/parallel-run-7d.md"
+  },
+  "hold_window": {
+    "completed": true,
+    "start_at": "2026-04-12T09:00:00+03:00",
+    "end_at": "2026-04-13T10:05:00+03:00",
+    "hours": 25.08,
+    "artifact": "docs/cutover/artifacts/2026-04-13/hold-window-24h.md"
+  },
+  "rollback_rehearsal": {
+    "completed": true,
+    "rehearsed_at": "2026-04-13T10:12:00+03:00",
+    "duration_minutes": 4.3,
+    "artifact": "docs/cutover/artifacts/2026-04-13/rollback-rehearsal.md"
+  }
+}

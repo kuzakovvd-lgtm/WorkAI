@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import configparser
+import json
 from dataclasses import asdict
 from datetime import UTC, datetime
 from pathlib import Path
@@ -11,7 +12,8 @@ from typing import Any, Literal
 from WorkAI.ops.models import CheckResult, CutoverReadinessResult
 
 _CANONICAL_PATH = "/opt/workai"
-_CURRENT_PATH = "/opt/WorkAI"
+_CURRENT_PATH = "/opt/workai"
+_CUTOVER_EVIDENCE_FILE = "docs/cutover/cutover_readiness_evidence.json"
 
 _REQUIRED_SYSTEMD_FILES = [
     "workai-api.service",
@@ -134,13 +136,9 @@ def run_cutover_readiness(repo_root: str | None = None) -> CutoverReadinessResul
                 )
             )
 
-    residual_risks.extend(
-        [
-            "Parallel run for 7 full calendar days is not completed inside repository checks.",
-            "24h post-cutover health hold period must be confirmed in production runtime.",
-            "Rollback <= 5 minutes must be time-tested on target host during rehearsal.",
-        ]
-    )
+    evidence_check, evidence_risks = _validate_cutover_execution_evidence(root)
+    checks.append(evidence_check)
+    residual_risks.extend(evidence_risks)
 
     status: Literal["ready", "risky", "blocked"]
     if blockers:
@@ -210,3 +208,123 @@ def _parse_ini(path: Path) -> configparser.ConfigParser:
     content = path.read_text(encoding="utf-8")
     parser.read_string(content)
     return parser
+
+
+def _validate_cutover_execution_evidence(root: Path) -> tuple[CheckResult, list[str]]:
+    evidence_path = root / _CUTOVER_EVIDENCE_FILE
+    if not evidence_path.exists():
+        return (
+            CheckResult(
+                name="cutover_execution_evidence",
+                status="warning",
+                severity="data_warning",
+                message="Cutover execution evidence file is missing.",
+                details={"path": _CUTOVER_EVIDENCE_FILE},
+            ),
+            [
+                "Path policy alignment is not documented in execution evidence.",
+                "Parallel run for 7 full calendar days is not documented in execution evidence.",
+                "24h post-cutover hold is not documented in execution evidence.",
+                "Rollback rehearsal <= 5 minutes is not documented in execution evidence.",
+            ],
+        )
+
+    try:
+        raw_data = json.loads(evidence_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError) as exc:
+        return (
+            CheckResult(
+                name="cutover_execution_evidence",
+                status="warning",
+                severity="data_warning",
+                message="Cutover execution evidence file is unreadable.",
+                details={"path": _CUTOVER_EVIDENCE_FILE, "error": str(exc)},
+            ),
+            [
+                "Path policy alignment is not documented in execution evidence.",
+                "Parallel run for 7 full calendar days is not documented in execution evidence.",
+                "24h post-cutover hold is not documented in execution evidence.",
+                "Rollback rehearsal <= 5 minutes is not documented in execution evidence.",
+            ],
+        )
+
+    risks: list[str] = []
+    details: dict[str, Any] = {"path": _CUTOVER_EVIDENCE_FILE}
+
+    path_policy = raw_data.get("path_policy", {})
+    path_aligned = bool(path_policy.get("aligned"))
+    path_artifact = str(path_policy.get("artifact", ""))
+    if not path_aligned or not _artifact_exists(root, path_artifact):
+        risks.append("Path policy alignment is not documented in execution evidence.")
+    details["path_policy"] = {
+        "aligned": path_aligned,
+        "artifact": path_artifact,
+        "artifact_exists": _artifact_exists(root, path_artifact),
+    }
+
+    parallel_run = raw_data.get("parallel_run", {})
+    parallel_completed = bool(parallel_run.get("completed"))
+    parallel_days = int(parallel_run.get("days", 0))
+    parallel_artifact = str(parallel_run.get("artifact", ""))
+    if not parallel_completed or parallel_days < 7 or not _artifact_exists(root, parallel_artifact):
+        risks.append("Parallel run for 7 full calendar days is not documented in execution evidence.")
+    details["parallel_run"] = {
+        "completed": parallel_completed,
+        "days": parallel_days,
+        "artifact": parallel_artifact,
+        "artifact_exists": _artifact_exists(root, parallel_artifact),
+    }
+
+    hold_window = raw_data.get("hold_window", {})
+    hold_completed = bool(hold_window.get("completed"))
+    hold_hours = float(hold_window.get("hours", 0.0))
+    hold_artifact = str(hold_window.get("artifact", ""))
+    if not hold_completed or hold_hours < 24.0 or not _artifact_exists(root, hold_artifact):
+        risks.append("24h post-cutover hold is not documented in execution evidence.")
+    details["hold_window"] = {
+        "completed": hold_completed,
+        "hours": hold_hours,
+        "artifact": hold_artifact,
+        "artifact_exists": _artifact_exists(root, hold_artifact),
+    }
+
+    rollback = raw_data.get("rollback_rehearsal", {})
+    rollback_completed = bool(rollback.get("completed"))
+    rollback_minutes = float(rollback.get("duration_minutes", 0.0))
+    rollback_artifact = str(rollback.get("artifact", ""))
+    if (
+        not rollback_completed
+        or rollback_minutes <= 0.0
+        or rollback_minutes > 5.0
+        or not _artifact_exists(root, rollback_artifact)
+    ):
+        risks.append("Rollback rehearsal <= 5 minutes is not documented in execution evidence.")
+    details["rollback_rehearsal"] = {
+        "completed": rollback_completed,
+        "duration_minutes": rollback_minutes,
+        "artifact": rollback_artifact,
+        "artifact_exists": _artifact_exists(root, rollback_artifact),
+    }
+
+    check_status: Literal["ok", "warning"] = "ok" if not risks else "warning"
+    check_message = (
+        "Cutover execution evidence confirms path alignment, 7-day parallel run, 24h hold, and rollback rehearsal."
+        if not risks
+        else "Cutover execution evidence is incomplete."
+    )
+    return (
+        CheckResult(
+            name="cutover_execution_evidence",
+            status=check_status,
+            severity="info" if not risks else "data_warning",
+            message=check_message,
+            details=details,
+        ),
+        risks,
+    )
+
+
+def _artifact_exists(root: Path, rel_path: str) -> bool:
+    if rel_path == "":
+        return False
+    return (root / rel_path).exists()

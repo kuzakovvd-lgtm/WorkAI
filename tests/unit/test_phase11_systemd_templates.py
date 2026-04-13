@@ -8,8 +8,9 @@ from WorkAI.ops.cutover_readiness import run_cutover_readiness
 
 def test_cutover_readiness_has_no_blockers() -> None:
     result = run_cutover_readiness(repo_root=str(Path.cwd()))
-    assert result.status == "risky"
+    assert result.status == "ready"
     assert result.blockers == []
+    assert result.residual_risks == []
 
 
 def test_systemd_templates_use_scripts_only_execstart() -> None:

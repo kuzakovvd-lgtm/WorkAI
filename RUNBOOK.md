@@ -344,6 +344,7 @@ That assumption is not valid in current project reality, so v1-alignment gates a
 
 - deployment path/unit/secrets contracts are ready;
 - cutover/rollback runbook is ready;
+- cutover execution evidence is recorded in repository artifacts;
 - healthcheck is green for a defined observation window after launch;
 - smoke pipeline checks pass post-launch;
 - rollback/restore path points to previous deploy + DB snapshot.
@@ -358,6 +359,15 @@ echo $?
 - `0` -> ready
 - `1` -> risky (no blockers, residual risks remain)
 - `2` -> blocked
+
+Required evidence file for `ready` status:
+
+- `docs/cutover/cutover_readiness_evidence.json`
+- must include and reference artifacts for:
+  - path policy alignment (`/opt/workai`);
+  - 7-day parallel run completion;
+  - >=24h post-cutover hold window;
+  - rollback rehearsal <=5 minutes.
 
 Optional post-launch count sanity (v2 snapshots, not v1 baseline):
 
