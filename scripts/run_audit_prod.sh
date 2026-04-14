@@ -48,4 +48,10 @@ export WORKAI_AUDIT__ENABLED="${WORKAI_AUDIT__ENABLED:-true}"
 set +a
 
 cd "$PROJECT_DIR"
-exec sudo -u workai -H "${CMD[@]}"
+
+ENV_ARGS=()
+while IFS= read -r var_name; do
+  ENV_ARGS+=( "${var_name}=${!var_name}" )
+done < <(compgen -v | grep -E '^(WORKAI_|OPENAI_)')
+
+exec sudo -u workai -H env "${ENV_ARGS[@]}" "${CMD[@]}"
