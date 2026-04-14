@@ -45,6 +45,29 @@ mypy WorkAI
 pytest -q -m "not integration and not integration_online"
 ```
 
+## Emergency server hardening (today)
+
+Apply SSH + fail2ban + firewall hardening and close public `:8000`:
+
+```bash
+sudo SSH_PORT=22 PERMIT_ROOT_LOGIN=no scripts/run_server_hardening.sh
+```
+
+Optional settings:
+
+- `PERMIT_ROOT_LOGIN=prohibit-password` if root key login must remain available.
+- `ALLOW_TCP_PORTS="80 443"` to define additional allowed inbound ports.
+- `API_UNIT_PATH=/etc/systemd/system/workai-api.service` if unit path differs.
+
+Post-checks (should pass):
+
+```bash
+sudo sshd -T | egrep 'passwordauthentication|permitrootlogin'
+sudo fail2ban-client status sshd
+sudo ufw status verbose
+sudo ss -ltnp | grep ':8000'
+```
+
 Server integration verification (isolated DB):
 
 ```bash

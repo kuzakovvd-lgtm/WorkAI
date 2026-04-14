@@ -33,3 +33,12 @@ def test_systemd_templates_use_scripts_only_execstart() -> None:
         script_token = next(token for token in exec_start.split() if token.startswith("/opt/workai/scripts/"))
         repo_script_path = Path("scripts") / Path(script_token).name
         assert repo_script_path.exists(), f"Missing script for {path.name}: {repo_script_path}"
+
+
+def test_workai_api_template_binds_localhost_only() -> None:
+    parser = configparser.ConfigParser(strict=False)
+    parser.optionxform = str
+    parser.read(Path("deploy/systemd/workai-api.service"), encoding="utf-8")
+    exec_start = parser.get("Service", "ExecStart")
+    assert "--host 127.0.0.1" in exec_start
+    assert "--host 0.0.0.0" not in exec_start

@@ -10,7 +10,7 @@ WorkingDirectory=/opt/workai
 EnvironmentFile=/etc/workai/secrets/db.env
 EnvironmentFile=/etc/workai/secrets/api.env
 EnvironmentFile=/etc/workai/secrets/workai.env
-ExecStart=/opt/workai/.venv/bin/python /opt/workai/scripts/workai_api.py run --host 0.0.0.0 --port 8000
+ExecStart=/opt/workai/.venv/bin/python /opt/workai/scripts/workai_api.py run --host 127.0.0.1 --port 8000
 Restart=always
 RestartSec=5
 
