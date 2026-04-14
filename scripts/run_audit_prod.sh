@@ -47,6 +47,11 @@ fi
 export WORKAI_AUDIT__ENABLED="${WORKAI_AUDIT__ENABLED:-true}"
 set +a
 
+if [[ -z "${OPENAI_API_KEY:-}" ]]; then
+  echo "OPENAI_API_KEY is not set in /etc/workai/secrets/workai.env or openai.env" >&2
+  exit 2
+fi
+
 cd "$PROJECT_DIR"
 
 ENV_ARGS=()

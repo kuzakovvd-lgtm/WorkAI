@@ -102,6 +102,8 @@ Run integration checks locally (isolated integration environment):
 cp deploy/secrets.example/db.test.env.example /etc/workai/secrets/db.test.env
 # optional (for online Google checks):
 # cp deploy/secrets.example/google_sheets.test.env.example /etc/workai/secrets/google_sheets.test.env
+# optional (for audit runs with LLM providers):
+# cp deploy/secrets.example/openai.env.example /etc/workai/secrets/openai.env
 
 scripts/run_integration_checks.sh
 # online profile:

@@ -302,6 +302,13 @@ sudo WORKAI_AUDIT_EMPLOYEE_ID=42 \
   /opt/workai/scripts/run_audit_prod.sh
 ```
 
+Required secret for manual/systemd audit run:
+
+```bash
+sudo test -f /etc/workai/secrets/openai.env || sudo touch /etc/workai/secrets/openai.env
+sudo grep '^OPENAI_API_KEY=' /etc/workai/secrets/openai.env
+```
+
 Install reusable systemd manual unit:
 
 ```bash
