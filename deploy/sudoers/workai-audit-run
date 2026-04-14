@@ -1,0 +1,6 @@
+# Allow bounded manual audit runner execution without broad root shell access.
+# Install with: sudo install -m 0440 deploy/sudoers/workai-audit-run /etc/sudoers.d/workai-audit-run
+Cmnd_Alias WORKAI_AUDIT_RUN = /opt/workai/scripts/run_audit_prod.sh
+
+# Example operational group. Adjust group name to your admin policy.
+%workai-ops ALL=(root) NOPASSWD: WORKAI_AUDIT_RUN

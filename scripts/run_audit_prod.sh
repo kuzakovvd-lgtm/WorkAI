@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ "${EUID:-$(id -u)}" -ne 0 ]]; then
+  echo "Run as root (sudo)." >&2
+  exit 1
+fi
+
+EMPLOYEE_ID="${WORKAI_AUDIT_EMPLOYEE_ID:-}"
+TARGET_DATE="${WORKAI_AUDIT_TARGET_DATE:-}"
+FORCE="${WORKAI_AUDIT_FORCE:-false}"
+PROJECT_DIR="${WORKAI_PROJECT_DIR:-/opt/workai}"
+PYTHON_BIN="${WORKAI_PYTHON_BIN:-/opt/workai/.venv/bin/python}"
+
+if [[ -z "$EMPLOYEE_ID" || -z "$TARGET_DATE" ]]; then
+  echo "WORKAI_AUDIT_EMPLOYEE_ID and WORKAI_AUDIT_TARGET_DATE are required." >&2
+  exit 2
+fi
+
+if [[ ! -d "$PROJECT_DIR" ]]; then
+  echo "Missing project directory: $PROJECT_DIR" >&2
+  exit 2
+fi
+
+if [[ ! -x "$PYTHON_BIN" ]]; then
+  echo "Missing python binary: $PYTHON_BIN" >&2
+  exit 2
+fi
+
+if [[ ! -f /etc/workai/secrets/db.env || ! -f /etc/workai/secrets/workai.env ]]; then
+  echo "Missing required env files in /etc/workai/secrets/" >&2
+  exit 2
+fi
+
+CMD=( "$PYTHON_BIN" "$PROJECT_DIR/scripts/run_audit.py" run --employee-id "$EMPLOYEE_ID" --date "$TARGET_DATE" )
+if [[ "$FORCE" == "true" || "$FORCE" == "1" ]]; then
+  CMD+=( --force )
+fi
+
+# Load prod env contract exactly like systemd services.
+set -a
+source /etc/workai/secrets/db.env
+source /etc/workai/secrets/workai.env
+if [[ -f /etc/workai/secrets/openai.env ]]; then
+  source /etc/workai/secrets/openai.env
+fi
+export WORKAI_AUDIT__ENABLED="${WORKAI_AUDIT__ENABLED:-true}"
+set +a
+
+cd "$PROJECT_DIR"
+exec sudo -u workai -H "${CMD[@]}"

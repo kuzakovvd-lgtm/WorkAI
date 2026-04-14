@@ -68,6 +68,28 @@ sudo ufw status verbose
 sudo ss -ltnp | grep ':8000'
 ```
 
+## Production git-state policy
+
+Repository in `/opt/workai` must stay clean (`git status --short` -> empty).
+
+Rules:
+
+- all deploys are fast-forward to `origin/Itogmain`;
+- no direct ad-hoc file edits inside `/opt/workai`;
+- runtime artifacts stay outside repo tree (`/var/log`, `/tmp`, `/etc/workai/secrets`);
+- if emergency local edits are unavoidable, save patch + promote to PR within 24h.
+
+Quick cleanup:
+
+```bash
+cd /opt/workai
+git fetch origin
+git checkout Itogmain
+git reset --hard origin/Itogmain
+git clean -fd
+git status --short
+```
+
 Server integration verification (isolated DB):
 
 ```bash
@@ -271,6 +293,28 @@ python scripts/run_audit.py run --employee-id 42 --date 2026-04-09
 python scripts/run_audit.py run --employee-id 42 --date 2026-04-09 --force
 ```
 
+Production-safe manual run (same env contract as systemd):
+
+```bash
+sudo WORKAI_AUDIT_EMPLOYEE_ID=42 \
+  WORKAI_AUDIT_TARGET_DATE=2026-04-09 \
+  WORKAI_AUDIT_FORCE=true \
+  /opt/workai/scripts/run_audit_prod.sh
+```
+
+Install reusable systemd manual unit:
+
+```bash
+sudo cp deploy/systemd/workai-audit-manual.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl set-environment \
+  WORKAI_AUDIT_EMPLOYEE_ID=42 \
+  WORKAI_AUDIT_TARGET_DATE=2026-04-09 \
+  WORKAI_AUDIT_FORCE=true
+sudo systemctl start workai-audit-manual.service
+sudo systemctl unset-environment WORKAI_AUDIT_EMPLOYEE_ID WORKAI_AUDIT_TARGET_DATE WORKAI_AUDIT_FORCE
+```
+
 Cache/force semantics:
 
 - `force=false`: if `completed` run exists for `(employee_id, task_date)`, runner returns cached report.
@@ -349,6 +393,33 @@ Verify timer chain and service outcomes for last 24h (systemctl + journalctl):
 
 ```bash
 python scripts/run_timer_chain_check.py --window-hours 24
+```
+
+## Reverse proxy (nginx) + TLS
+
+Install and enable reverse proxy to local API (`127.0.0.1:8000`):
+
+```bash
+sudo /opt/workai/scripts/setup_nginx_reverse_proxy.sh
+```
+
+Template path in repository:
+
+- `deploy/nginx/workai.conf`
+
+Issue TLS certificate (public domain required):
+
+```bash
+sudo apt-get install -y certbot python3-certbot-nginx
+sudo certbot --nginx -d <your-domain>
+```
+
+Post-check:
+
+```bash
+curl -I http://127.0.0.1:8000/health
+curl -I http://<your-domain>/health
+curl -I https://<your-domain>/health
 ```
 
 ## Server path conventions

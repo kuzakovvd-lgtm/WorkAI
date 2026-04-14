@@ -1,0 +1,13 @@
+[Unit]
+Description=WorkAI v2 manual AI audit run
+After=network.target
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+WorkingDirectory=/opt/workai
+Environment=WORKAI_AUDIT_EMPLOYEE_ID=
+Environment=WORKAI_AUDIT_TARGET_DATE=
+Environment=WORKAI_AUDIT_FORCE=false
+ExecStart=/opt/workai/scripts/run_audit_prod.sh
