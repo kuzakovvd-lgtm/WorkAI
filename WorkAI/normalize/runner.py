@@ -32,9 +32,18 @@ from WorkAI.normalize.queries import (
     insert_tasks_normalized_batch,
 )
 from WorkAI.normalize.text_norm import normalize_task_text
-from WorkAI.normalize.time_parse import extract_time_info
+from WorkAI.normalize.time_parse import TimeInfo, extract_time_info
 
 _LOG = get_logger(__name__)
+_PENDING_RESULT_MARKERS = (
+    "ожид",
+    " wait",
+    "wip",
+    "в работе",
+    "todo",
+    "to do",
+    "вернуться",
+)
 
 
 @dataclass(frozen=True)
@@ -241,6 +250,7 @@ def _normalize_sheet_rows(
                 category_code = categorize(cleaned_text, category_rules)
                 if category_code is not None:
                     stats.category_assigned_count += 1
+            is_zhdun = _is_zhdun_task(cleaned_text)
 
             rows.append(
                 NormalizedTaskRow(
@@ -268,10 +278,12 @@ def _normalize_sheet_rows(
                     is_micro=_is_micro_task(
                         None if time_info is None else time_info.duration_minutes
                     ),
-                    result_confirmed=not (
-                        time_info is None or time_info.duration_minutes is None
+                    result_confirmed=_is_result_confirmed(
+                        text=cleaned_text,
+                        time_info=time_info,
+                        is_zhdun=is_zhdun,
                     ),
-                    is_zhdun=_is_zhdun_task(cleaned_text),
+                    is_zhdun=is_zhdun,
                     category_code=category_code,
                     task_category=category_code,
                     canonical_text=cleaned_text,
@@ -361,6 +373,20 @@ def _is_zhdun_task(text: str) -> bool:
 def _is_smart_task(text: str) -> bool:
     normalized = text.strip()
     return len(normalized) >= 20
+
+
+def _is_result_confirmed(*, text: str, time_info: TimeInfo | None, is_zhdun: bool) -> bool:
+    if time_info is not None and time_info.duration_minutes is not None:
+        return True
+
+    normalized = text.strip()
+    if normalized == "":
+        return False
+    if is_zhdun:
+        return False
+
+    lowered = normalized.casefold()
+    return not any(marker in lowered for marker in _PENDING_RESULT_MARKERS)
 
 
 def _lock_key(*, sheet_id: str, work_date: date) -> str:

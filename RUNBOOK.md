@@ -293,13 +293,16 @@ python scripts/run_audit.py run --employee-id 42 --date 2026-04-09
 python scripts/run_audit.py run --employee-id 42 --date 2026-04-09 --force
 ```
 
-Production-safe manual run (same env contract as systemd):
+Production-safe manual run:
+
+- preferred: start via API `/analysis/start`;
+- fallback: run dedicated `workai-audit-manual.service` as `User=workai` (no root shell).
 
 ```bash
-sudo WORKAI_AUDIT_EMPLOYEE_ID=42 \
-  WORKAI_AUDIT_TARGET_DATE=2026-04-09 \
-  WORKAI_AUDIT_FORCE=true \
-  /opt/workai/scripts/run_audit_prod.sh
+curl -sS -X POST "http://127.0.0.1:8000/analysis/start" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: $WORKAI_API_KEY" \
+  -d '{"employee_id":42,"task_date":"2026-04-09","force":true}'
 ```
 
 Required secret for manual/systemd audit run:

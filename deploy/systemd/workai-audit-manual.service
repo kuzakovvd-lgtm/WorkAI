@@ -4,10 +4,12 @@ After=network.target
 
 [Service]
 Type=oneshot
-User=root
-Group=root
+User=workai
+Group=workai
 WorkingDirectory=/opt/workai
-Environment=WORKAI_AUDIT_EMPLOYEE_ID=
-Environment=WORKAI_AUDIT_TARGET_DATE=
-Environment=WORKAI_AUDIT_FORCE=false
+EnvironmentFile=/etc/workai/secrets/db.env
+EnvironmentFile=/etc/workai/secrets/api.env
+EnvironmentFile=/etc/workai/secrets/workai.env
+Environment=HOME=/opt/workai
+PassEnvironment=WORKAI_AUDIT_EMPLOYEE_ID WORKAI_AUDIT_TARGET_DATE WORKAI_AUDIT_FORCE
 ExecStart=/opt/workai/scripts/run_audit_prod.sh

@@ -81,6 +81,8 @@ def run_audit(
 
     init_db(resolved)
     processing_run_id: UUID | None = None
+    retry_attempts = int(getattr(resolved.audit, "failed_retry_attempts", 1))
+    max_attempts = max(1, retry_attempts + 1)
 
     try:
         with connection() as conn, conn.cursor() as cur:
@@ -124,70 +126,104 @@ def run_audit(
             processing_run_id = processing_run.id
             conn.commit()
 
-        started = time.perf_counter()
+        for attempt in range(1, max_attempts + 1):
+            started = time.perf_counter()
+            try:
+                with connection() as conn, conn.cursor() as cur:
+                    payload = fetch_prefetch_payload(cur, employee_id, task_date)
 
-        with connection() as conn, conn.cursor() as cur:
-            payload = fetch_prefetch_payload(cur, employee_id, task_date)
+                inputs = {
+                    "employee_id": employee_id,
+                    "task_date": task_date.isoformat(),
+                    "index_of_trust_base": payload.index_of_trust_base,
+                    "none_time_source_ratio": payload.none_time_source_ratio,
+                    "non_smart_ratio": payload.non_smart_ratio,
+                    "ghost_time_hours": payload.ghost_time_hours,
+                    "aggregated_tasks_json": json.dumps(payload.aggregated_tasks, ensure_ascii=False),
+                }
 
-        inputs = {
-            "employee_id": employee_id,
-            "task_date": task_date.isoformat(),
-            "index_of_trust_base": payload.index_of_trust_base,
-            "none_time_source_ratio": payload.none_time_source_ratio,
-            "non_smart_ratio": payload.non_smart_ratio,
-            "ghost_time_hours": payload.ghost_time_hours,
-            "aggregated_tasks_json": json.dumps(payload.aggregated_tasks, ensure_ascii=False),
-        }
+                crew = crew_builder(
+                    settings=resolved,
+                    use_methodology_tool=should_use_methodology_lookup(payload.ghost_time_hours),
+                )
+                crew_result = crew.kickoff(inputs=inputs)
 
-        crew = crew_builder(
-            settings=resolved,
-            use_methodology_tool=should_use_methodology_lookup(payload.ghost_time_hours),
-        )
-        crew_result = crew.kickoff(inputs=inputs)
+                raw_report = _extract_report_payload(crew_result)
+                merged_report = {
+                    **raw_report,
+                    "employee_id": employee_id,
+                    "task_date": task_date,
+                    "index_of_trust_base": payload.index_of_trust_base,
+                    "none_time_source_ratio": payload.none_time_source_ratio,
+                    "non_smart_ratio": payload.non_smart_ratio,
+                    "ghost_time_hours": payload.ghost_time_hours,
+                }
+                report = FinalAuditReport.model_validate(merged_report)
 
-        raw_report = _extract_report_payload(crew_result)
-        merged_report = {
-            **raw_report,
-            "employee_id": employee_id,
-            "task_date": task_date,
-            "index_of_trust_base": payload.index_of_trust_base,
-            "none_time_source_ratio": payload.none_time_source_ratio,
-            "non_smart_ratio": payload.non_smart_ratio,
-            "ghost_time_hours": payload.ghost_time_hours,
-        }
-        report = FinalAuditReport.model_validate(merged_report)
+                usage = _extract_usage(
+                    crew_result=crew_result,
+                    crew=crew,
+                    duration_seconds=time.perf_counter() - started,
+                )
 
-        usage = _extract_usage(
-            crew_result=crew_result,
-            crew=crew,
-            duration_seconds=time.perf_counter() - started,
-        )
+                report_json = cast(dict[str, object], report.model_dump(mode="json"))
+                report_json["_usage"] = usage
 
-        report_json = cast(dict[str, object], report.model_dump(mode="json"))
-        report_json["_usage"] = usage
+                with connection() as conn, conn.cursor() as cur:
+                    mark_run_completed(cur, processing_run.id, report_json)
+                    conn.commit()
 
-        with connection() as conn, conn.cursor() as cur:
-            mark_run_completed(cur, processing_run.id, report_json)
-            conn.commit()
-
-        _LOG.info(
-            "audit_completed",
-            employee_id=employee_id,
-            task_date=task_date.isoformat(),
-            run_id=str(processing_run.id),
-        )
-        return AuditRunResult(
-            run_id=processing_run.id,
-            employee_id=employee_id,
-            task_date=task_date,
-            status="completed",
-            report_json=report_json,
-            cached=False,
-        )
+                _LOG.info(
+                    "audit_completed",
+                    employee_id=employee_id,
+                    task_date=task_date.isoformat(),
+                    run_id=str(processing_run.id),
+                    attempt=attempt,
+                    attempts_total=max_attempts,
+                )
+                return AuditRunResult(
+                    run_id=processing_run.id,
+                    employee_id=employee_id,
+                    task_date=task_date,
+                    status="completed",
+                    report_json=report_json,
+                    cached=False,
+                )
+            except Exception as attempt_exc:
+                error_text = str(attempt_exc)[:4000]
+                _LOG.error(
+                    "audit_attempt_failed_reason",
+                    employee_id=employee_id,
+                    task_date=task_date.isoformat(),
+                    attempt=attempt,
+                    attempts_total=max_attempts,
+                    error_type=type(attempt_exc).__name__,
+                    error=error_text,
+                )
+                if attempt < max_attempts:
+                    _LOG.warning(
+                        "audit_retry_scheduled",
+                        employee_id=employee_id,
+                        task_date=task_date.isoformat(),
+                        next_attempt=attempt + 1,
+                        attempts_total=max_attempts,
+                    )
+                    continue
+                raise
 
     except Exception as exc:
         if processing_run_id is not None:
-            _persist_failed_run(processing_run_id, str(exc), resolved=resolved)
+            error_text = str(exc)[:4000]
+            _persist_failed_run(processing_run_id, error_text, resolved=resolved)
+            _LOG.error(
+                "audit_failed_reason",
+                employee_id=employee_id,
+                task_date=task_date.isoformat(),
+                run_id=str(processing_run_id),
+                attempts_total=max_attempts,
+                error_type=type(exc).__name__,
+                error=error_text,
+            )
         _LOG.exception(
             "audit_failed",
             employee_id=employee_id,

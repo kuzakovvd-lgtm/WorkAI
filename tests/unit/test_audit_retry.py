@@ -5,34 +5,29 @@ from datetime import UTC, date, datetime
 from types import SimpleNamespace
 from uuid import uuid4
 
-import pytest
 from WorkAI.audit import crew as audit_crew_module
 from WorkAI.audit.models import AuditPrefetchPayload, AuditRunRecord
-from WorkAI.common import DatabaseError
 
 
-def test_force_error_path_persists_failed_even_if_pool_was_closed(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_audit_retries_once_and_completes(monkeypatch) -> None:  # type: ignore[no-untyped-def]
     state = {
-        "pool_open": False,
-        "init_calls": 0,
+        "kickoff_calls": 0,
+        "mark_completed_calls": 0,
         "mark_failed_calls": 0,
     }
+    run_id = uuid4()
 
     def fake_configure_logging(_: object) -> None:
         return None
 
     def fake_init_db(_: object | None = None) -> None:
-        state["pool_open"] = True
-        state["init_calls"] += 1
+        return None
 
     def fake_close_db() -> None:
-        state["pool_open"] = False
+        return None
 
     @contextmanager
     def fake_connection() -> object:
-        if not state["pool_open"]:
-            raise DatabaseError("pool closed")
-
         class _DummyCursor:
             def __enter__(self) -> _DummyCursor:
                 return self
@@ -48,8 +43,6 @@ def test_force_error_path_persists_failed_even_if_pool_was_closed(monkeypatch: p
                 return None
 
         yield _DummyConn()
-
-    run_id = uuid4()
 
     def fake_find_completed_run(cur: object, employee_id: int, task_date: date) -> None:
         del cur, employee_id, task_date
@@ -82,27 +75,40 @@ def test_force_error_path_persists_failed_even_if_pool_was_closed(monkeypatch: p
         return AuditPrefetchPayload(
             employee_id=employee_id,
             task_date=task_date,
-            index_of_trust_base=0.5,
-            none_time_source_ratio=0.2,
+            index_of_trust_base=0.7,
+            none_time_source_ratio=0.1,
             non_smart_ratio=0.2,
-            ghost_time_hours=5.0,
+            ghost_time_hours=2.0,
             aggregated_tasks=[],
         )
+
+    def fake_mark_run_completed(cur: object, run: object, report_json: dict[str, object]) -> None:
+        del cur, run, report_json
+        state["mark_completed_calls"] += 1
 
     def fake_mark_run_failed(cur: object, run: object, error: str) -> None:
         del cur, run, error
         state["mark_failed_calls"] += 1
 
-    class _FailingCrew:
+    class _FlakyCrew:
         def kickoff(self, *, inputs: dict[str, object]) -> dict[str, object]:
             del inputs
-            # Simulate pool closure during tool execution (previously came from KB lookup close_db()).
-            fake_close_db()
-            raise RuntimeError("forced test failure")
+            state["kickoff_calls"] += 1
+            if state["kickoff_calls"] == 1:
+                raise RuntimeError("transient LLM error")
+            return {
+                "executive_summary": "ok",
+                "top_3_priorities": [{"title": "a", "rationale": "b"}],
+                "high_priority_employees": [],
+                "key_findings": ["f1"],
+                "smart_actions": ["s1"],
+                "blockers_zhdun": [],
+                "methodology_recommendation": "m1",
+            }
 
-    def fake_crew_builder(*, settings: object, use_methodology_tool: bool) -> _FailingCrew:
+    def fake_crew_builder(*, settings: object, use_methodology_tool: bool) -> _FlakyCrew:
         del settings, use_methodology_tool
-        return _FailingCrew()
+        return _FlakyCrew()
 
     monkeypatch.setattr(audit_crew_module, "configure_logging", fake_configure_logging)
     monkeypatch.setattr(audit_crew_module, "init_db", fake_init_db)
@@ -111,19 +117,19 @@ def test_force_error_path_persists_failed_even_if_pool_was_closed(monkeypatch: p
     monkeypatch.setattr(audit_crew_module, "find_completed_run", fake_find_completed_run)
     monkeypatch.setattr(audit_crew_module, "insert_run", fake_insert_run)
     monkeypatch.setattr(audit_crew_module, "fetch_prefetch_payload", fake_fetch_prefetch_payload)
+    monkeypatch.setattr(audit_crew_module, "mark_run_completed", fake_mark_run_completed)
     monkeypatch.setattr(audit_crew_module, "mark_run_failed", fake_mark_run_failed)
 
-    settings = SimpleNamespace(audit=SimpleNamespace(enabled=True, failed_retry_attempts=0))
+    settings = SimpleNamespace(audit=SimpleNamespace(enabled=True, failed_retry_attempts=1))
+    result = audit_crew_module.run_audit(
+        employee_id=7,
+        task_date=date(2026, 4, 10),
+        force=True,
+        settings=settings,
+        crew_builder=fake_crew_builder,
+    )
 
-    with pytest.raises(RuntimeError, match="forced test failure"):
-        audit_crew_module.run_audit(
-            employee_id=7,
-            task_date=date(2026, 4, 10),
-            force=True,
-            settings=settings,
-            crew_builder=fake_crew_builder,
-        )
-
-    # Initial init + one re-init for failed-run persistence after pool closure.
-    assert state["init_calls"] == 2
-    assert state["mark_failed_calls"] == 1
+    assert result.status == "completed"
+    assert state["kickoff_calls"] == 2
+    assert state["mark_completed_calls"] == 1
+    assert state["mark_failed_calls"] == 0

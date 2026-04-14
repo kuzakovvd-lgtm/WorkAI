@@ -192,6 +192,7 @@ class AuditSettings(BaseModel):
     openai_max_retries: int = Field(default=2, validation_alias="OPENAI_MAX_RETRIES")
     max_iter: int = 5
     max_rpm: int = 10
+    failed_retry_attempts: int = 1
 
     @model_validator(mode="after")
     def validate_limits(self) -> AuditSettings:
@@ -203,6 +204,8 @@ class AuditSettings(BaseModel):
             raise ValueError("WORKAI_AUDIT__MAX_RPM must be > 0")
         if self.openai_max_retries < 0:
             raise ValueError("OPENAI_MAX_RETRIES must be >= 0")
+        if self.failed_retry_attempts < 0 or self.failed_retry_attempts > 2:
+            raise ValueError("WORKAI_AUDIT__FAILED_RETRY_ATTEMPTS must be in range [0, 2]")
         return self
 
 
