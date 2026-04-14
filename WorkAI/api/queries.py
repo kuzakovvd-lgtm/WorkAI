@@ -294,3 +294,48 @@ def fetch_debug_cost(cur: Cursor[object], from_date: date | None, to_date: date 
     )
     rows = cast(list[tuple[Any, ...]], cur.fetchall())
     return rows
+
+
+def update_task_result_confirmed(
+    cur: Cursor[object],
+    normalized_task_id: int,
+    result_confirmed: bool,
+) -> tuple[Any, ...] | None:
+    """Update one tasks_normalized.result_confirmed row and return id/state."""
+
+    cur.execute(
+        """
+        UPDATE tasks_normalized
+        SET result_confirmed = %s,
+            normalized_at = now()
+        WHERE id = %s
+        RETURNING id, result_confirmed, normalized_at
+        """,
+        (result_confirmed, normalized_task_id),
+    )
+    row = cast(tuple[Any, ...] | None, cur.fetchone())
+    return row
+
+
+def fetch_result_confirmed_daily_report(cur: Cursor[object], to_date: date | None) -> list[tuple[Any, ...]]:
+    """Return daily result_confirmed report up to selected date."""
+
+    cur.execute(
+        """
+        SELECT
+            task_date,
+            COUNT(*)::int AS total,
+            COUNT(*) FILTER (WHERE result_confirmed)::int AS done,
+            ROUND(
+                100.0 * COUNT(*) FILTER (WHERE result_confirmed) / NULLIF(COUNT(*), 0),
+                1
+            )::float AS pct
+        FROM tasks_normalized
+        WHERE task_date <= COALESCE(%s::date, current_date)
+        GROUP BY task_date
+        ORDER BY task_date DESC
+        """,
+        (to_date,),
+    )
+    rows = cast(list[tuple[Any, ...]], cur.fetchall())
+    return rows

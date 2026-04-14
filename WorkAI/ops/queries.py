@@ -59,6 +59,21 @@ WHERE task_date >= (%s::date - interval '7 days')
   AND task_date <= %s::date
 """
 
+FETCH_AUDIT_FAILED_LAST_HOUR_SQL = """
+SELECT COUNT(*)::int
+FROM audit_runs
+WHERE status = 'failed'
+  AND started_at >= (now() - interval '1 hour')
+"""
+
+FETCH_RESULT_CONFIRMED_DAILY_SQL = """
+SELECT
+  COUNT(*)::int AS total_rows,
+  COUNT(*) FILTER (WHERE result_confirmed = true)::int AS confirmed_rows
+FROM tasks_normalized
+WHERE task_date = %s::date
+"""
+
 FETCH_LATEST_TASKS_TARGET_SQL = """
 SELECT employee_id, task_date
 FROM tasks_normalized
@@ -172,3 +187,23 @@ def fetch_latest_tasks_target(cur: Cursor[object]) -> tuple[int, date] | None:
     if row is None:
         return None
     return (int(row[0]), cast(date, row[1]))
+
+
+def fetch_audit_failed_last_hour(cur: Cursor[object]) -> int:
+    """Return count of failed audit runs in the last hour."""
+
+    cur.execute(FETCH_AUDIT_FAILED_LAST_HOUR_SQL)
+    row = cast(tuple[Any, ...] | None, cur.fetchone())
+    if row is None:
+        return 0
+    return int(row[0])
+
+
+def fetch_result_confirmed_daily(cur: Cursor[object], target_date: date) -> tuple[int, int]:
+    """Return (total_rows, confirmed_rows) for one task_date."""
+
+    cur.execute(FETCH_RESULT_CONFIRMED_DAILY_SQL, (target_date,))
+    row = cast(tuple[Any, ...] | None, cur.fetchone())
+    if row is None:
+        return (0, 0)
+    return (int(row[0]), int(row[1]))

@@ -16,9 +16,11 @@ from WorkAI.config import Settings, get_settings
 from WorkAI.db import close_db, connection, get_pool, init_db
 from WorkAI.ops.models import CheckResult, HealthcheckResult, Severity
 from WorkAI.ops.queries import (
+    fetch_audit_failed_last_hour,
     fetch_db_health,
     fetch_latest_tasks_target,
     fetch_recent_audit_failure_rate,
+    fetch_result_confirmed_daily,
     fetch_table_count,
     fetch_table_max_timestamp,
 )
@@ -95,6 +97,8 @@ def run_healthcheck(
             checks.extend(_freshness_checks(cur, unit_dir=unit_dir))
             checks.extend(_data_volume_checks(cur, today))
             checks.extend(_audit_error_rate_checks(cur, today))
+            checks.extend(_audit_failed_last_hour_checks(cur))
+            checks.extend(_result_confirmed_daily_checks(cur, today))
             checks.extend(_protected_api_checks(cur, resolved))
 
     # Unit verification
@@ -374,6 +378,84 @@ def _audit_error_rate_checks(cur: Cursor[object], target_date: date) -> list[Che
             severity="info",
             message="Audit failure ratio is acceptable",
             details={"failed_runs": failed_runs, "total_runs": total_runs, "failure_ratio": round(ratio, 4)},
+        )
+    ]
+
+
+def _audit_failed_last_hour_checks(cur: Cursor[object]) -> list[CheckResult]:
+    failed_last_hour = fetch_audit_failed_last_hour(cur)
+    if failed_last_hour > 0:
+        return [
+            CheckResult(
+                name="audit_failed_last_hour",
+                status="critical",
+                severity="infra_critical",
+                message="Audit has failed runs in the last hour",
+                details={"failed_runs_last_hour": failed_last_hour},
+            )
+        ]
+
+    return [
+        CheckResult(
+            name="audit_failed_last_hour",
+            status="ok",
+            severity="info",
+            message="No failed audit runs in the last hour",
+            details={"failed_runs_last_hour": 0},
+        )
+    ]
+
+
+def _result_confirmed_daily_checks(cur: Cursor[object], target_date: date) -> list[CheckResult]:
+    total_rows, confirmed_rows = fetch_result_confirmed_daily(cur, target_date)
+    if total_rows <= 0:
+        return [
+            CheckResult(
+                name="result_confirmed_daily",
+                status="not_applicable",
+                severity="info",
+                message="No tasks_normalized rows for target date",
+                details={"task_date": target_date.isoformat()},
+            )
+        ]
+
+    confirmed_pct = round((100.0 * confirmed_rows) / float(total_rows), 1)
+    target_pct_raw = os.getenv("WORKAI_HEALTHCHECK__RESULT_CONFIRMED_TARGET_PCT", "70").strip()
+    try:
+        target_pct = float(target_pct_raw)
+    except ValueError:
+        target_pct = 70.0
+
+    if confirmed_pct < target_pct:
+        return [
+            CheckResult(
+                name="result_confirmed_daily",
+                status="warning",
+                severity="data_warning",
+                message="Daily result_confirmed ratio is below threshold",
+                details={
+                    "task_date": target_date.isoformat(),
+                    "total_rows": total_rows,
+                    "confirmed_rows": confirmed_rows,
+                    "confirmed_pct": confirmed_pct,
+                    "target_pct": target_pct,
+                },
+            )
+        ]
+
+    return [
+        CheckResult(
+            name="result_confirmed_daily",
+            status="ok",
+            severity="info",
+            message="Daily result_confirmed ratio is within threshold",
+            details={
+                "task_date": target_date.isoformat(),
+                "total_rows": total_rows,
+                "confirmed_rows": confirmed_rows,
+                "confirmed_pct": confirmed_pct,
+                "target_pct": target_pct,
+            },
         )
     ]
 

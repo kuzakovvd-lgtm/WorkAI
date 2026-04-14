@@ -265,6 +265,24 @@ def test_api_smoke(monkeypatch: pytest.MonkeyPatch) -> None:
         )
         assert norm_resp.status_code == 200
         assert norm_resp.json()[0]["id"] == normalized_task_id
+        assert norm_resp.json()[0]["result_confirmed"] is True
+
+        confirm_resp = client.post(
+            f"/tasks/{normalized_task_id}/confirm",
+            headers=headers,
+            json={"result_confirmed": False},
+        )
+        assert confirm_resp.status_code == 200
+        assert confirm_resp.json()["id"] == normalized_task_id
+        assert confirm_resp.json()["result_confirmed"] is False
+
+        norm_after_confirm_resp = client.get(
+            "/tasks/normalized",
+            headers=headers,
+            params={"employee_id": employee_id, "task_date": str(task_day)},
+        )
+        assert norm_after_confirm_resp.status_code == 200
+        assert norm_after_confirm_resp.json()[0]["result_confirmed"] is False
 
         agg_resp = client.get(
             "/tasks/aggregated",
@@ -316,6 +334,14 @@ def test_api_smoke(monkeypatch: pytest.MonkeyPatch) -> None:
         )
         assert debug_cost_resp.status_code == 200
         assert len(debug_cost_resp.json()) == 1
+
+        debug_result_confirmed_resp = client.get(
+            "/debug/result-confirmed-daily",
+            headers=headers,
+            params={"to": str(task_day)},
+        )
+        assert debug_result_confirmed_resp.status_code == 200
+        assert any(item["task_date"] == str(task_day) for item in debug_result_confirmed_resp.json())
 
     init_db()
     try:

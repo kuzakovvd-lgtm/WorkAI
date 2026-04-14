@@ -78,6 +78,20 @@ class NormalizedTaskDTO(BaseModel):
     line_no: int
 
 
+class TaskConfirmRequest(BaseModel):
+    """Request body for one normalized task confirmation update."""
+
+    result_confirmed: bool = True
+
+
+class TaskConfirmResponse(BaseModel):
+    """Response payload for one normalized task confirmation update."""
+
+    id: int
+    result_confirmed: bool
+    normalized_at: datetime
+
+
 class OperationalCycleDTO(BaseModel):
     """operational_cycles projection for API."""
 
@@ -188,6 +202,15 @@ class DebugCostRowDTO(BaseModel):
     output_tokens: int
     cost_usd: float
     rollup_at: datetime
+
+
+class ResultConfirmedDailyRowDTO(BaseModel):
+    """Daily result_confirmed KPI row."""
+
+    task_date: date
+    total: int
+    done: int
+    pct: float
 
 
 class ListEnvelope(BaseModel):

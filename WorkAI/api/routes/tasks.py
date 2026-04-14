@@ -5,11 +5,23 @@ from __future__ import annotations
 import asyncio
 from datetime import date
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Path, Query
 
 from WorkAI.api.dependencies import get_db, verify_api_key
-from WorkAI.api.queries import fetch_aggregated_cycles, fetch_normalized_tasks, fetch_raw_tasks
-from WorkAI.api.schemas import NormalizedTaskDTO, OperationalCycleDTO, RawTaskDTO
+from WorkAI.api.errors import not_found_error
+from WorkAI.api.queries import (
+    fetch_aggregated_cycles,
+    fetch_normalized_tasks,
+    fetch_raw_tasks,
+    update_task_result_confirmed,
+)
+from WorkAI.api.schemas import (
+    NormalizedTaskDTO,
+    OperationalCycleDTO,
+    RawTaskDTO,
+    TaskConfirmRequest,
+    TaskConfirmResponse,
+)
 from WorkAI.db import connection
 
 router = APIRouter(prefix="/tasks", tags=["tasks"], dependencies=[Depends(verify_api_key), Depends(get_db)])
@@ -87,6 +99,20 @@ def _load_aggregated(employee_id: int, task_date: date) -> list[OperationalCycle
     ]
 
 
+def _confirm_task(normalized_task_id: int, result_confirmed: bool) -> TaskConfirmResponse:
+    with connection() as conn, conn.cursor() as cur:
+        row = update_task_result_confirmed(cur, normalized_task_id, result_confirmed)
+        if row is None:
+            raise not_found_error("normalized task")
+        conn.commit()
+
+    return TaskConfirmResponse(
+        id=int(row[0]),
+        result_confirmed=bool(row[1]),
+        normalized_at=row[2],
+    )
+
+
 @router.get("/raw", response_model=list[RawTaskDTO])
 async def get_raw_tasks(
     employee_id: int = Query(..., gt=0),
@@ -115,3 +141,13 @@ async def get_aggregated_tasks(
     """Return operational cycles for one employee/day."""
 
     return await asyncio.to_thread(_load_aggregated, employee_id, task_date)
+
+
+@router.post("/{normalized_task_id}/confirm", response_model=TaskConfirmResponse)
+async def confirm_task(
+    payload: TaskConfirmRequest,
+    normalized_task_id: int = Path(..., gt=0),
+) -> TaskConfirmResponse:
+    """Set tasks_normalized.result_confirmed for one task id."""
+
+    return await asyncio.to_thread(_confirm_task, normalized_task_id, payload.result_confirmed)
