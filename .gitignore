@@ -53,6 +53,7 @@ coverage.xml
 # Secrets (MUST never be committed)
 .env
 *.env
+.env.*
 secrets/
 *.pem
 *.key
